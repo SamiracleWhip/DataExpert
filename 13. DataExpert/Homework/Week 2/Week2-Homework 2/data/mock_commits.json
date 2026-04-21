@@ -1,0 +1,83 @@
+[
+  {
+    "sha": "a1b2c3d",
+    "message": "feat: scaffold OAuth2 provider integration",
+    "author": "alice",
+    "timestamp": "2026-04-07T09:20:00Z",
+    "pr_id": 101,
+    "additions": 180,
+    "deletions": 10
+  },
+  {
+    "sha": "b2c3d4e",
+    "message": "feat: add token refresh logic and session middleware",
+    "author": "alice",
+    "timestamp": "2026-04-08T11:00:00Z",
+    "pr_id": 101,
+    "additions": 132,
+    "deletions": 37
+  },
+  {
+    "sha": "c3d4e5f",
+    "message": "fix: add mutex around queue pop to prevent double-processing",
+    "author": "bob",
+    "timestamp": "2026-04-08T10:15:00Z",
+    "pr_id": 102,
+    "additions": 64,
+    "deletions": 31
+  },
+  {
+    "sha": "d4e5f6a",
+    "message": "chore: bump vulnerable packages flagged in security audit",
+    "author": "carol",
+    "timestamp": "2026-04-09T08:45:00Z",
+    "pr_id": 103,
+    "additions": 18,
+    "deletions": 18
+  },
+  {
+    "sha": "e5f6a7b",
+    "message": "feat: new chart components with recharts v3",
+    "author": "dave",
+    "timestamp": "2026-04-10T13:30:00Z",
+    "pr_id": 104,
+    "additions": 300,
+    "deletions": 100
+  },
+  {
+    "sha": "f6a7b8c",
+    "message": "feat: responsive layout for dashboard v2",
+    "author": "dave",
+    "timestamp": "2026-04-11T09:00:00Z",
+    "pr_id": 104,
+    "additions": 240,
+    "deletions": 110
+  },
+  {
+    "sha": "a7b8c9d",
+    "message": "fix: correct page offset calculation (was n+1, should be n)",
+    "author": "alice",
+    "timestamp": "2026-04-11T08:30:00Z",
+    "pr_id": 105,
+    "additions": 22,
+    "deletions": 15
+  },
+  {
+    "sha": "b8c9d0e",
+    "message": "docs: rewrite endpoint descriptions for clarity",
+    "author": "eve",
+    "timestamp": "2026-04-11T10:30:00Z",
+    "pr_id": 106,
+    "additions": 95,
+    "deletions": 40
+  },
+  {
+    "sha": "c9d0e1f",
+    "message": "feat: add CSV writer utility with streaming support",
+    "author": "bob",
+    "timestamp": "2026-04-12T14:30:00Z",
+    "pr_id": 107,
+    "additions": 183,
+    "deletions": 12
+  }
+]

@@ -1,0 +1,28 @@
+{
+  "commits": [
+    {
+      "date": "2026-04-10",
+      "message": "fix: sanitize password input in SQL fallback auth path to prevent injection"
+    },
+    {
+      "date": "2026-04-11",
+      "message": "feat: migrate session storage from JWT to Redis-backed opaque tokens"
+    },
+    {
+      "date": "2026-04-11",
+      "message": "chore: add sessions table migration (0042_add_sessions_table.sql)"
+    },
+    {
+      "date": "2026-04-12",
+      "message": "perf: add index on sessions.user_id to speed up session lookup"
+    },
+    {
+      "date": "2026-04-12",
+      "message": "fix: correct Redis TTL calculation for remember-me sessions (30d not 1d)"
+    },
+    {
+      "date": "2026-04-13",
+      "message": "docs: update auth README with new session token flow and migration guide"
+    }
+  ]
+}

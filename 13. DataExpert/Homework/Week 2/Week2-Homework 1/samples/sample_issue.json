@@ -1,0 +1,5 @@
+{
+  "title": "Login fails for users with special characters in password",
+  "body": "When a user has a password containing special characters like `!@#$%^&*`, the login endpoint returns a 500 error instead of authenticating the user. This affects approximately 15% of our user base based on our password policy stats.\n\nSteps to reproduce:\n1. Create an account with password `P@ssw0rd!23`\n2. Log out\n3. Attempt to log in — server returns 500\n\nExpected: Successful authentication\nActual: 500 Internal Server Error\n\nServer logs show: `psycopg2.errors.InvalidEscapeSequence` — looks like the password isn't being sanitized before the SQL query.",
+  "comments": "Confirmed on staging too. Looks like the bcrypt compare step is fine but there's a raw SQL fallback path that's not using parameterized queries. — dev@example.com\n\nThis is causing support tickets to pile up. Roughly 40 users impacted so far."
+}

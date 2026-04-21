@@ -1,0 +1,37 @@
+Subject: [Engineering Update] Authentication & Session Management Improvements – April 10–13, 2026
+
+Hi team,
+
+We've completed a series of updates to our authentication and session management systems. Please review the details below.
+
+---
+
+**What Changed**
+
+- Closed a security vulnerability in our login system where specially crafted password inputs could have been used to manipulate database queries (SQL injection fix).
+- Replaced our existing login token system (JWT) with a more secure, server-controlled session token approach backed by Redis. This gives us the ability to immediately invalidate sessions when needed (e.g., on logout or account compromise).
+- Added the necessary database infrastructure to support the new session storage, including a dedicated sessions table and a performance index to keep session lookups fast.
+- Fixed a bug where "Remember Me" sessions were expiring after 1 day instead of the intended 30 days.
+- Updated internal documentation to reflect the new authentication flow and to guide teams through the migration.
+
+---
+
+**Risk / Impact**
+
+The migration from JWT to Redis-backed session tokens is the most significant change in this release and will invalidate all existing user sessions at the time of deployment. Users will be logged out and required to sign in again — this is expected and intentional. There is a brief dependency on Redis availability for all authenticated requests going forward, meaning Redis downtime would affect user sessions. The SQL injection fix and TTL correction carry low risk on their own, but the session migration requires careful coordination with the deployment window. Rollback procedures are documented in the updated auth README.
+
+---
+
+**Action Needed**
+
+- **All users will be logged out automatically** at deploy time — no action is needed from end users beyond signing back in, but consider whether your team wants to communicate this disruption proactively (e.g., a maintenance notice).
+- **Teams with internal tooling or scripts that consume or validate JWT tokens** should review the updated auth README and migrate to the new opaque token flow before the deployment goes live.
+- **Infrastructure / DevOps:** Confirm that the Redis instance is provisioned, healthy, and accessible before deployment proceeds.
+- **QA / Testing:** Validate that "Remember Me" sessions persist correctly for 30 days in the staging environment prior to production release.
+
+---
+
+Please reach out with any questions or concerns before the scheduled deployment.
+
+Thanks,
+Engineering
