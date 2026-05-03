@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Tooltip, Polyline } from 'react-leaflet'
-import { X } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { MapContainer, TileLayer, CircleMarker, Tooltip, Polyline, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import { X, Bookmark, BookmarkCheck, Train } from 'lucide-react'
+import { addBookmark, removeBookmark, isBookmarked, mrtMinutes } from '../../lib/bookmarks'
 import {
   LineChart,
   Line,
@@ -16,6 +18,27 @@ import { useQuery } from '../../hooks/useQuery'
 import { api } from '../../lib/api'
 
 const SG_CENTER: [number, number] = [1.3521, 103.8198]
+
+// Fits the map to the loaded buildings whenever they change.
+// Sits inside MapContainer so it can use the useMap() hook.
+function MapController({ buildings }: { buildings: Building[] | null }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!buildings || buildings.length === 0) {
+      map.setView(SG_CENTER, 12)
+      return
+    }
+    if (buildings.length === 1) {
+      map.setView([buildings[0].lat, buildings[0].lng], 15)
+      return
+    }
+    const bounds = L.latLngBounds(buildings.map(b => [b.lat, b.lng] as [number, number]))
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 })
+  }, [buildings, map])
+
+  return null
+}
 
 interface MrtLine {
   type: string
@@ -49,6 +72,18 @@ function fmtMonth(year: number, month: number) {
 function BuildingDrawer({ building, filters, onClose }: {
   building: Building; filters: Filters; onClose: () => void
 }) {
+  const [bookmarked, setBookmarked] = useState(() => isBookmarked(building.id))
+
+  const toggleBookmark = () => {
+    if (bookmarked) {
+      removeBookmark(building.id)
+    } else {
+      // district not in Building type — derive from filter or leave blank
+      addBookmark(building, filters.districts[0] ?? '')
+    }
+    setBookmarked(!bookmarked)
+  }
+
   const { data, loading } = useQuery<TrendPoint[]>(
     () => api.trends(filters, building.id) as Promise<TrendPoint[]>,
     [building.id, JSON.stringify(filters)],
@@ -56,13 +91,28 @@ function BuildingDrawer({ building, filters, onClose }: {
   return (
     <div className="absolute top-0 right-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl z-[1000] flex flex-col border-l border-gray-200 dark:border-gray-700">
       <div className="flex items-start justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-        <div>
+        <div className="min-w-0 flex-1 mr-2">
           <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{building.project}</h3>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{building.street}</p>
+          {building.nearest_mrt && (
+            <p className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <Train className="w-3 h-3 flex-shrink-0" />
+              {building.nearest_mrt} · {mrtMinutes(building.nearest_mrt_m)}
+            </p>
+          )}
         </div>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
-          <X className="w-4 h-4 text-gray-500" />
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={toggleBookmark}
+            title={bookmarked ? 'Remove bookmark' : 'Save property'}
+            className={`p-1.5 rounded-lg transition-colors ${bookmarked ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+          >
+            {bookmarked ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+          </button>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
       </div>
       <div className="p-4 grid grid-cols-2 gap-3 border-b border-gray-200 dark:border-gray-700">
         <div>
@@ -148,6 +198,8 @@ export function MapView({ filters }: Props) {
           attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
+        <MapController buildings={buildings ?? null} />
+
         {/* MRT lines */}
         {showLines && mrtLines?.features.map((f, i) => (
           <Polyline
@@ -195,9 +247,14 @@ export function MapView({ filters }: Props) {
             eventHandlers={{ click: () => setSelectedBuilding(b) }}
           >
             <Tooltip direction="top" offset={[0, -6]}>
-              <span className="text-xs">
+              <span className="text-xs leading-snug">
                 <strong>{b.project}</strong><br />
                 Avg: {fmtRent(b.avg_rent)} · {b.contract_count} contracts
+                {b.nearest_mrt && (
+                  <><br /><span style={{ color: '#9ca3af' }}>
+                    🚇 {b.nearest_mrt} · {mrtMinutes(b.nearest_mrt_m)}
+                  </span></>
+                )}
               </span>
             </Tooltip>
           </CircleMarker>

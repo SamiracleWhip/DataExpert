@@ -6,6 +6,7 @@ import { LandingPage } from './components/Layout/LandingPage'
 import { MapView } from './components/Map/MapView'
 import { ChartsView } from './components/Charts/ChartsView'
 import { ContractsTable } from './components/Table/ContractsTable'
+import { SavedView } from './components/Saved/SavedView'
 import { useFilters } from './hooks/useFilters'
 import { useQuery } from './hooks/useQuery'
 import { api } from './lib/api'
@@ -67,7 +68,15 @@ function App() {
         )}
         {activeTab === 'charts' && <ChartsView filters={filters} />}
         {activeTab === 'map' && <MapView filters={filters} />}
+        {activeTab === 'saved' && <SavedView />}
         {activeTab === 'table' && <ContractsTable filters={filters} />}
+        {activeTab === 'ai' && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-gray-500">
+            <span className="text-5xl">✨</span>
+            <p className="text-xl font-semibold text-gray-700 dark:text-gray-300">AI Magic</p>
+            <p className="text-sm">Coming soon.</p>
+          </div>
+        )}
       </div>
     </div>
   )

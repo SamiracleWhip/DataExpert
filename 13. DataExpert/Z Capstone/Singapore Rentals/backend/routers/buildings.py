@@ -182,7 +182,11 @@ async def list_buildings(
             b.lat,
             b.lng,
             ROUND(AVG(r.rent), 0) AS avg_rent,
-            COUNT(*) AS contract_count
+            COUNT(*) AS contract_count,
+            (SELECT station_name FROM building_mrt_proximity
+             WHERE building_id = b.id ORDER BY distance_m LIMIT 1) AS nearest_mrt,
+            (SELECT distance_m FROM building_mrt_proximity
+             WHERE building_id = b.id ORDER BY distance_m LIMIT 1) AS nearest_mrt_m
         FROM buildings b
         JOIN rental_contracts r ON r.building_id = b.id
         {sql_where}
@@ -201,6 +205,8 @@ async def list_buildings(
             "lng": r["lng"],
             "avg_rent": r["avg_rent"],
             "contract_count": r["contract_count"],
+            "nearest_mrt": r["nearest_mrt"],
+            "nearest_mrt_m": r["nearest_mrt_m"],
         }
         for r in rows
     ]

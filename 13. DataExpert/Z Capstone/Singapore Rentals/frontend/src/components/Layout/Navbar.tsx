@@ -1,6 +1,6 @@
-import { Moon, Sun, MapPin } from 'lucide-react'
+import { Moon, Sun, MapPin, Bookmark, Sparkles } from 'lucide-react'
 
-export type Tab = 'home' | 'map' | 'charts' | 'table'
+export type Tab = 'home' | 'charts' | 'map' | 'saved' | 'table' | 'ai'
 
 interface Props {
   activeTab: Tab
@@ -10,10 +10,12 @@ interface Props {
   onToggleDark: () => void
 }
 
-const TABS: { id: Tab; label: string }[] = [
+const TABS: { id: Tab; label: string; icon?: React.ReactNode }[] = [
   { id: 'charts', label: 'Charts' },
   { id: 'map', label: 'Map' },
+  { id: 'saved', label: 'Saved', icon: <Bookmark className="w-3 h-3" /> },
   { id: 'table', label: 'Table' },
+  { id: 'ai', label: 'AI Magic', icon: <Sparkles className="w-3 h-3" /> },
 ]
 
 export function Navbar({ activeTab, onTabChange, onHome, darkMode, onToggleDark }: Props) {
@@ -39,7 +41,9 @@ export function Navbar({ activeTab, onTabChange, onHome, darkMode, onToggleDark 
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
             }`}
           >
-            {tab.label}
+            <span className="flex items-center gap-1">
+              {tab.icon}{tab.label}
+            </span>
           </button>
         ))}
       </nav>

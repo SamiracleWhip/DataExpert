@@ -11,6 +11,21 @@ export interface Building {
   lng: number
   avg_rent: number
   contract_count: number
+  nearest_mrt: string | null
+  nearest_mrt_m: number | null
+}
+
+export interface Bookmark {
+  id: number
+  project: string
+  street: string
+  district: string
+  avg_rent: number
+  lat: number
+  lng: number
+  nearest_mrt: string | null
+  nearest_mrt_m: number | null
+  savedAt: number
 }
 
 export interface TrendPoint {
