@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+.DS_Store
+*.db
+*.sqlite
+.venv/
+venv/
+raw_rental_contracts_all.json
+node_modules/
+dist/
+.claude/

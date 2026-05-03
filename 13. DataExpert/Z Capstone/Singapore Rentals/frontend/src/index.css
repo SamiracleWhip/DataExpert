@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* District map — plain dark background, no tiles */
+.district-map-wrap .leaflet-container {
+  background: #141924;
+}
+
+/* District map tooltip */
+.district-tooltip {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: none !important;
+  border-radius: 6px !important;
+  color: #f1f5f9 !important;
+  font-size: 11px !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  padding: 3px 8px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  white-space: nowrap;
+}
+.district-tooltip::before { display: none !important; }
+
+/* Dual range slider thumbs */
+.range-slider input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  pointer-events: none;
+  outline: none;
+  margin: 0;
+  padding: 0;
+}
+.range-slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid #3b82f6;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  cursor: grab;
+  pointer-events: all;
+  transition: transform .1s, border-color .1s;
+}
+.range-slider input[type='range']::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.range-slider input[type='range']::-webkit-slider-thumb:active { cursor: grabbing; }
+.range-slider input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2.5px solid #3b82f6;
+  box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  cursor: grab;
+  pointer-events: all;
+}
+/* Dark mode thumbs */
+.dark .range-slider input[type='range']::-webkit-slider-thumb {
+  background: #1e293b;
+  border-color: #60a5fa;
+}
+.dark .range-slider input[type='range']::-moz-range-thumb {
+  background: #1e293b;
+  border-color: #60a5fa;
+}

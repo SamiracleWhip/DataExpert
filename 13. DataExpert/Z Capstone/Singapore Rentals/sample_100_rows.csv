@@ -1,0 +1,101 @@
+project,street,lat,lng,lease_year,lease_month,property_type,district,area_name,area_sqm_min,area_sqm_max,area_sqft_min,area_sqft_max,no_of_bedrooms,rent
+"# 1 LOFT","LORONG 24 GEYLANG",1.312715,103.883474,2026,3,"Non-landed Properties",14,"Geylang, Eunos",50,60,500,600,1,2900
+"# 1 SUITES","LORONG 20 GEYLANG",1.312317,103.881418,2026,3,"Non-landed Properties",14,"Geylang, Eunos",50,60,500,600,1,3500
+"# 1 SUITES","LORONG 20 GEYLANG",1.312317,103.881418,2026,3,"Non-landed Properties",14,"Geylang, Eunos",50,60,600,700,1,3300
+"# 1 SUITES","LORONG 20 GEYLANG",1.312317,103.881418,2026,3,"Non-landed Properties",14,"Geylang, Eunos",50,60,500,600,1,4000
+"1 KING ALBERT PARK","KING ALBERT PARK",1.336505,103.780221,2026,3,"Non-landed Properties",21,"Upper Bukit Timah, Ulu Pandan",110,120,1200,1300,2,5800
+"1 KING ALBERT PARK","KING ALBERT PARK",1.336505,103.780221,2026,3,"Non-landed Properties",21,"Upper Bukit Timah, Ulu Pandan",110,120,1200,1300,2,3800
+"1 KING ALBERT PARK","KING ALBERT PARK",1.336505,103.780221,2026,3,"Non-landed Properties",21,"Upper Bukit Timah, Ulu Pandan",130,140,1400,1500,3,5675
+"1 KING ALBERT PARK","KING ALBERT PARK",1.336505,103.780221,2026,3,"Non-landed Properties",21,"Upper Bukit Timah, Ulu Pandan",110,120,1100,1200,2,4700
+"10 EVELYN","EVELYN ROAD",1.316229,103.840593,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3600
+"10 EVELYN","EVELYN ROAD",1.316229,103.840593,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3500
+"10 SHELFORD","SHELFORD ROAD",1.325723,103.812444,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",30,40,400,500,1,3000
+"111 EMERALD HILL","EMERALD HILL ROAD",1.305109,103.83932,2026,3,"Non-landed Properties",09,"Orchard, River Valley",,,,,4,15500
+"120 GRANGE","GRANGE ROAD",1.299919,103.825575,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",50,60,500,600,2,4500
+"120 GRANGE","GRANGE ROAD",1.299919,103.825575,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",60,70,600,700,2,4700
+"120 GRANGE","GRANGE ROAD",1.299919,103.825575,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",50,60,500,600,2,4700
+"15 HOLLAND HILL","HOLLAND HILL",1.3096,103.800941,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",180,190,2000,2100,3,14500
+"16 @ AMBER","AMBER ROAD",1.29957,103.898764,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",30,40,400,500,1,3050
+"18 WOODSVILLE","WOODSVILLE CLOSE",1.329506,103.868105,2026,3,"Non-landed Properties",13,"Macpherson, Braddell",110,120,1200,1300,2,3900
+"18 WOODSVILLE","WOODSVILLE CLOSE",1.329506,103.868105,2026,3,"Non-landed Properties",13,"Macpherson, Braddell",40,50,400,500,1,3000
+"183 LONGHAUS","UPPER THOMSON ROAD",1.35089,103.835451,2026,3,"Non-landed Properties",20,"Bishan, Ang Mo Kio",40,50,500,600,2,3500
+"19 NASSIM","NASSIM HILL",1.306651,103.821411,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",70,80,800,900,2,8000
+1919,"SOPHIA ROAD",1.302837,103.846496,2026,3,"Non-landed Properties",09,"Orchard, River Valley",50,60,500,600,1,3600
+1919,"SOPHIA ROAD",1.302837,103.846496,2026,3,"Non-landed Properties",09,"Orchard, River Valley",50,60,500,600,1,3900
+1953,"TESSENSOHN ROAD",1.316561,103.857704,2026,3,"Non-landed Properties",08,"Little India",50,60,600,700,1,3500
+"21 RICHARDS","RICHARDS AVENUE",1.361794,103.881319,2026,3,"Non-landed Properties",19,"Serangoon Garden, Hougang, Punggol",50,60,500,600,2,2900
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3300
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",50,60,500,600,2,3700
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3450
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3150
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",50,60,500,600,2,3500
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3400
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3600
+"26 NEWTON","NEWTON ROAD",1.315768,103.841678,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3200
+"28 IMPERIAL RESIDENCES","LORONG 26 GEYLANG",1.311705,103.884523,2026,3,"Non-landed Properties",14,"Geylang, Eunos",40,50,500,600,2,3300
+"28 RC SUITES","RACE COURSE LANE",1.310061,103.853034,2026,3,"Non-landed Properties",08,"Little India",30,40,400,500,1,3300
+"28 SHELFORD","SHELFORD ROAD",1.329082,103.811687,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",70,80,800,900,2,4700
+"283 STUDIO","RIVER VALLEY ROAD",1.295641,103.839727,2026,3,"Non-landed Properties",09,"Orchard, River Valley",40,50,500,600,1,3500
+"3 CUSCADEN","CUSCADEN WALK",1.303887,103.829449,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",40,50,400,500,1,4000
+"3 CUSCADEN","CUSCADEN WALK",1.303887,103.829449,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",40,50,400,500,1,4200
+"3 CUSCADEN","CUSCADEN WALK",1.303887,103.829449,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",70,80,700,800,2,6600
+"3 CUSCADEN","CUSCADEN WALK",1.303887,103.829449,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",40,50,400,500,1,4600
+"3 ORCHARD BY-THE-PARK","ORCHARD BOULEVARD",1.303255,103.824762,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",,,,,4,23000
+"3 ORCHARD BY-THE-PARK","ORCHARD BOULEVARD",1.303255,103.824762,2026,3,"Non-landed Properties",10,"Ardmore, Bukit Timah, Holland Road, Tanglin",90,100,1000,1100,2,8000
+"336 RIVER VALLEY","RIVER VALLEY ROAD",1.296071,103.83847,2026,3,"Non-landed Properties",09,"Orchard, River Valley",140,150,1500,1600,2,5400
+"336 RIVER VALLEY","RIVER VALLEY ROAD",1.296071,103.83847,2026,3,"Non-landed Properties",09,"Orchard, River Valley",140,150,1500,1600,2,4900
+"336 RIVER VALLEY","RIVER VALLEY ROAD",1.296071,103.83847,2026,3,"Non-landed Properties",09,"Orchard, River Valley",140,150,1500,1600,2,4700
+"336 RIVER VALLEY","RIVER VALLEY ROAD",1.296071,103.83847,2026,3,"Non-landed Properties",09,"Orchard, River Valley",140,150,1500,1600,2,5300
+"336 RIVER VALLEY","RIVER VALLEY ROAD",1.296071,103.83847,2026,3,"Non-landed Properties",09,"Orchard, River Valley",140,150,1500,1600,2,5000
+"336 RIVER VALLEY","RIVER VALLEY ROAD",1.296071,103.83847,2026,3,"Non-landed Properties",09,"Orchard, River Valley",140,150,1500,1600,2,5100
+"35 GILSTEAD","GILSTEAD ROAD",1.317177,103.837881,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",60,70,700,800,,4400
+"35 GILSTEAD","GILSTEAD ROAD",1.317177,103.837881,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",80,90,900,1000,,6000
+"35 GILSTEAD","GILSTEAD ROAD",1.317177,103.837881,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",50,60,500,600,,3800
+"368 THOMSON","THOMSON ROAD",1.327014,103.842062,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",80,90,800,900,2,4100
+"368 THOMSON","THOMSON ROAD",1.327014,103.842062,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",60,70,600,700,1,3200
+"368 THOMSON","THOMSON ROAD",1.327014,103.842062,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",80,90,800,900,2,4000
+"368 THOMSON","THOMSON ROAD",1.327014,103.842062,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",80,90,800,900,2,4200
+"368 THOMSON","THOMSON ROAD",1.327014,103.842062,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",60,70,600,700,1,3500
+"38 AMBER","AMBER ROAD",1.30065,103.900785,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",110,120,1100,1200,3,5500
+"38 I SUITES","IPOH LANE",1.311783,103.896233,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",60,70,600,700,2,2600
+"38 I SUITES","IPOH LANE",1.311783,103.896233,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",40,50,400,500,2,3000
+"38 I SUITES","IPOH LANE",1.311783,103.896233,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",40,50,500,600,2,2800
+"38 I SUITES","IPOH LANE",1.311783,103.896233,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",40,50,500,600,2,3100
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3200
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,500,600,1,3400
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",70,80,800,900,2,4000
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,500,600,1,3200
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,500,600,1,3450
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3300
+"6 DERBYSHIRE","DERBYSHIRE ROAD",1.315606,103.845821,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3100
+"7 ON CHAPEL","CHAPEL ROAD",1.306585,103.907692,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",60,70,600,700,1,4200
+"76 SHENTON","SHENTON WAY",1.273565,103.845478,2026,3,"Non-landed Properties",02,"Anson, Tanjong Pagar",50,60,600,700,1,4600
+"76 SHENTON","SHENTON WAY",1.273565,103.845478,2026,3,"Non-landed Properties",02,"Anson, Tanjong Pagar",90,100,900,1000,2,5700
+"76 SHENTON","SHENTON WAY",1.273565,103.845478,2026,3,"Non-landed Properties",02,"Anson, Tanjong Pagar",50,60,500,600,1,4100
+"76 SHENTON","SHENTON WAY",1.273565,103.845478,2026,3,"Non-landed Properties",02,"Anson, Tanjong Pagar",50,60,500,600,1,4000
+"76 SHENTON","SHENTON WAY",1.273565,103.845478,2026,3,"Non-landed Properties",02,"Anson, Tanjong Pagar",50,60,500,600,1,4300
+"77 @ EAST COAST","UPPER EAST COAST ROAD",1.313452,103.927344,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",60,70,700,800,1,3600
+"77 @ EAST COAST","UPPER EAST COAST ROAD",1.313452,103.927344,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",90,100,900,1000,3,4500
+"77 @ EAST COAST","UPPER EAST COAST ROAD",1.313452,103.927344,2026,3,"Non-landed Properties",15,"Katong, Joo Chiat, Amber Road",40,50,400,500,1,3000
+"8 @ MOUNT SOPHIA","MOUNT SOPHIA",1.301338,103.845876,2026,3,"Non-landed Properties",09,"Orchard, River Valley",130,140,1400,1500,3,6800
+"8 @ MOUNT SOPHIA","MOUNT SOPHIA",1.301338,103.845876,2026,3,"Non-landed Properties",09,"Orchard, River Valley",120,130,1300,1400,3,6800
+"8 @ MOUNT SOPHIA","MOUNT SOPHIA",1.301338,103.845876,2026,3,"Non-landed Properties",09,"Orchard, River Valley",200,210,2100,2200,3,8800
+"8 @ MOUNT SOPHIA","MOUNT SOPHIA",1.301338,103.845876,2026,3,"Non-landed Properties",09,"Orchard, River Valley",70,80,800,900,1,3900
+"8 @ MOUNT SOPHIA","MOUNT SOPHIA",1.301338,103.845876,2026,3,"Non-landed Properties",09,"Orchard, River Valley",230,240,2400,2500,3,8700
+"8 BASSEIN","BASSEIN ROAD",1.323455,103.848036,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",40,50,400,500,1,3000
+"8 BASSEIN","BASSEIN ROAD",1.323455,103.848036,2026,3,"Non-landed Properties",11,"Novena, Thomson, Watten",30,40,400,500,1,2750
+"8 FARRER SUITES","SING JOO WALK",1.314915,103.854767,2026,3,"Non-landed Properties",08,"Little India",80,90,900,1000,3,5000
+"8 HULLET","HULLET ROAD",1.302945,103.83864,2026,3,"Non-landed Properties",09,"Orchard, River Valley",60,70,600,700,2,4800
+"8 RODYK","RODYK STREET",1.29016,103.837476,2026,3,"Non-landed Properties",09,"Orchard, River Valley",60,70,700,800,1,4800
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",40,50,400,500,1,4000
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",90,100,1000,1100,2,7500
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",80,90,800,900,2,5800
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",120,130,1300,1400,3,9800
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",40,50,500,600,1,4900
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",120,130,1300,1400,3,9700
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",80,90,800,900,2,5700
+"8 SAINT THOMAS","ST. THOMAS WALK",1.296821,103.836127,2026,3,"Non-landed Properties",09,"Orchard, River Valley",40,50,500,600,1,4100
+8@WOODLEIGH,"WOODLEIGH CLOSE",1.335981,103.869765,2026,3,"Non-landed Properties",13,"Macpherson, Braddell",120,130,1300,1400,4,6100
+8@WOODLEIGH,"WOODLEIGH CLOSE",1.335981,103.869765,2026,3,"Non-landed Properties",13,"Macpherson, Braddell",30,40,300,400,,2700
+8@WOODLEIGH,"WOODLEIGH CLOSE",1.335981,103.869765,2026,3,"Non-landed Properties",13,"Macpherson, Braddell",70,80,800,900,2,4200
+8@WOODLEIGH,"WOODLEIGH CLOSE",1.335981,103.869765,2026,3,"Non-landed Properties",13,"Macpherson, Braddell",80,90,900,1000,3,5200
