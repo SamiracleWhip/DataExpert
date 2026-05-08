@@ -63,7 +63,7 @@ const PROPERTY_TYPE_OPTIONS = [
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">
+    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
       {children}
     </p>
   )
@@ -129,15 +129,15 @@ export function LandingPage({
     <div className="flex-1 flex overflow-hidden bg-gray-50 dark:bg-gray-900">
 
       {/* ── Left column: CTA + filters ── */}
-      <div className="w-1/2 flex-shrink-0 flex flex-col overflow-y-auto px-8 py-6 gap-4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <div className="w-1/2 flex-shrink-0 flex flex-col overflow-y-auto px-10 py-8 gap-6 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
 
         {/* CTA */}
-        <div className="mb-1">
+        <div className="pb-2">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-snug min-h-[5rem]">
             {displayed}
             <span className={`inline-block w-0.5 h-7 ml-0.5 align-middle bg-blue-500 transition-opacity ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
           </h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
             336,751 contracts · 4,230 buildings · 2022–2026
           </p>
         </div>
@@ -247,7 +247,7 @@ export function LandingPage({
         <div className="flex-1" />
 
         {/* CTA button */}
-        <div className="flex flex-col gap-2 pb-1">
+        <div className="flex flex-col gap-3 pb-2">
           <button
             onClick={onSearch}
             className="w-full py-3 bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-semibold text-base rounded-xl shadow transition-all"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { DATE_MIN, DATE_MAX } from '../../hooks/useFilters'
+import { DATE_MAX, DATE_DEFAULT_FROM } from '../../hooks/useFilters'
 
 // Data spans Jan 2022 (index 0) → Mar 2026 (index 50)
 const MONTH_COUNT = 51
@@ -101,7 +101,7 @@ export function DateRangeSlider({ dateFrom, dateTo, onChange, compact = false }:
     setMode(m => m === 'month' ? 'quarter' : 'month')
   }
 
-  const isFullRange = dateFrom === DATE_MIN && dateTo === DATE_MAX
+  const isFullRange = dateFrom === DATE_DEFAULT_FROM && dateTo === DATE_MAX
 
   const trackH  = compact ? 'h-1' : 'h-1.5'
   const wrapH   = compact ? 'h-4' : 'h-5'

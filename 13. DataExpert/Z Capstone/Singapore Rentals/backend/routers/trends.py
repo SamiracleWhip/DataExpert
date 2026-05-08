@@ -27,6 +27,7 @@ async def get_trends(
     building_id: list[int] = Query(default=[]),
     group_by_district: bool = False,
     group_by_building: bool = False,
+    group_by_bedrooms: bool = False,
     db: aiosqlite.Connection = Depends(get_db),
 ):
     params = dict(
@@ -43,7 +44,28 @@ async def get_trends(
     )
     where, values = build_rental_filter(params, table_alias="r")
 
-    if group_by_building:
+    if group_by_bedrooms:
+        sql = f"""
+            WITH ordered AS (
+                SELECT
+                    r.lease_year, r.lease_month,
+                    COALESCE(r.no_of_bedrooms, 'unknown') AS bedrooms,
+                    r.rent,
+                    ROW_NUMBER() OVER (PARTITION BY r.lease_year, r.lease_month, r.no_of_bedrooms ORDER BY r.rent) AS rn,
+                    COUNT(*) OVER (PARTITION BY r.lease_year, r.lease_month, r.no_of_bedrooms) AS cnt
+                FROM rental_contracts r
+                {where}
+            )
+            SELECT
+                lease_year, lease_month, bedrooms,
+                ROUND(AVG(rent), 0) AS avg_rent,
+                ROUND(AVG(CASE WHEN rn IN ((cnt + 1) / 2, (cnt + 2) / 2) THEN CAST(rent AS REAL) ELSE NULL END), 0) AS median_rent,
+                COUNT(*) AS contracts
+            FROM ordered
+            GROUP BY lease_year, lease_month, bedrooms
+            ORDER BY lease_year, lease_month, bedrooms
+        """
+    elif group_by_building:
         sql = f"""
             SELECT
                 r.building_id,
@@ -74,21 +96,48 @@ async def get_trends(
             ORDER BY r.lease_year, r.lease_month, r.district
         """
     else:
+        # CTE with window functions to compute median alongside avg in one pass
         sql = f"""
+            WITH ordered AS (
+                SELECT
+                    r.lease_year, r.lease_month, r.rent,
+                    r.area_sqm_min, r.area_sqm_max,
+                    ROW_NUMBER() OVER (PARTITION BY r.lease_year, r.lease_month ORDER BY r.rent) AS rn,
+                    COUNT(*) OVER (PARTITION BY r.lease_year, r.lease_month) AS cnt
+                FROM rental_contracts r
+                {where}
+            )
             SELECT
-                r.lease_year,
-                r.lease_month,
-                ROUND(AVG(r.rent), 0) AS avg_rent,
-                {_PSM},
+                lease_year,
+                lease_month,
+                ROUND(AVG(rent), 0) AS avg_rent,
+                ROUND(AVG(CASE WHEN rn IN ((cnt + 1) / 2, (cnt + 2) / 2) THEN CAST(rent AS REAL) ELSE NULL END), 0) AS median_rent,
+                ROUND(AVG(
+                    CASE WHEN area_sqm_min > 0 AND area_sqm_max > 0
+                    THEN rent * 1.0 / ((area_sqm_min + area_sqm_max) / 2.0)
+                    ELSE NULL END
+                ), 1) AS avg_psm,
                 COUNT(*) AS contracts
-            FROM rental_contracts r
-            {where}
-            GROUP BY r.lease_year, r.lease_month
-            ORDER BY r.lease_year, r.lease_month
+            FROM ordered
+            GROUP BY lease_year, lease_month
+            ORDER BY lease_year, lease_month
         """
 
     cursor = await db.execute(sql, values)
     rows = await cursor.fetchall()
+
+    if group_by_bedrooms:
+        return [
+            {
+                "year": r["lease_year"],
+                "month": r["lease_month"],
+                "bedrooms": r["bedrooms"],
+                "avg_rent": r["avg_rent"],
+                "median_rent": r["median_rent"],
+                "contracts": r["contracts"],
+            }
+            for r in rows
+        ]
 
     if group_by_building:
         return [
@@ -122,6 +171,7 @@ async def get_trends(
             "year": r["lease_year"],
             "month": r["lease_month"],
             "avg_rent": r["avg_rent"],
+            "median_rent": r["median_rent"],
             "avg_psm": r["avg_psm"],
             "contracts": r["contracts"],
         }

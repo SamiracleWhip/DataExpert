@@ -139,6 +139,49 @@ async def enrich_building(
     }
 
 
+@router.get("/{building_id}/enrichment")
+async def get_building_enrichment(
+    building_id: int,
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """Return PropertyGuru enrichment data for a building (developer, facilities, etc.)."""
+    enrich_cur = await db.execute(
+        """
+        SELECT developer, year_completed, tenure, total_units, description, pg_url
+        FROM building_enrichment
+        WHERE building_id = ?
+        """,
+        [building_id],
+    )
+    enrich = await enrich_cur.fetchone()
+
+    if not enrich:
+        return {
+            "building_id": building_id,
+            "available": False,
+            "message": "No PropertyGuru enrichment data for this building.",
+        }
+
+    fac_cur = await db.execute(
+        "SELECT facility FROM building_facilities WHERE building_id = ? ORDER BY facility",
+        [building_id],
+    )
+    fac_rows = await fac_cur.fetchall()
+    facilities = [r["facility"] for r in fac_rows]
+
+    return {
+        "building_id": building_id,
+        "available": True,
+        "developer": enrich["developer"],
+        "year_completed": enrich["year_completed"],
+        "tenure": enrich["tenure"],
+        "total_units": enrich["total_units"],
+        "facilities": facilities,
+        "description": enrich["description"],
+        "pg_url": enrich["pg_url"],
+    }
+
+
 @router.get("")
 async def list_buildings(
     district: list[str] = Query(default=[]),

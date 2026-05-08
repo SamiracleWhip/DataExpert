@@ -1,6 +1,6 @@
 import type { Bookmark, Building } from '../types'
 
-const KEY = 'shedza_bookmarks'
+const KEY = 'casota_bookmarks'
 
 export function getBookmarks(): Bookmark[] {
   try {

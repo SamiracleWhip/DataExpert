@@ -1,5 +1,62 @@
 import type { Filters } from '../types'
 
+export interface SseEvent {
+  type: string
+  text?: string
+  tool?: string
+  message?: string
+}
+
+export async function* chatStream(
+  message: string,
+  history: { role: string; content: string }[],
+  filters: Filters,
+  signal?: AbortSignal,
+): AsyncGenerator<SseEvent> {
+  const f: Record<string, unknown> = {}
+  if (filters.districts.length) f.district = filters.districts
+  if (filters.stations.length) f.station = filters.stations
+  if (filters.bedrooms.length) f.bedrooms = filters.bedrooms
+  if (filters.propertyTypes.length) f.property_type = filters.propertyTypes
+  if (filters.areaMin) f.area_min = filters.areaMin
+  if (filters.areaMax) f.area_max = filters.areaMax
+  f.area_unit = filters.areaUnit
+  if (filters.dateFrom) f.date_from = filters.dateFrom
+  if (filters.dateTo) f.date_to = filters.dateTo
+  if (filters.selectedBuildings.length) {
+    f.building_id = filters.selectedBuildings.map(b => b.id)
+  }
+
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history, filters: f }),
+    signal,
+  })
+  if (!res.ok) throw new Error(`Chat API error ${res.status}`)
+  if (!res.body) return
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    const lines = buf.split('\n')
+    buf = lines.pop() ?? ''
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const raw = line.slice(6).trim()
+        if (raw) {
+          try { yield JSON.parse(raw) } catch { /* skip malformed */ }
+        }
+      }
+    }
+  }
+}
+
 function filtersToParams(filters: Filters): URLSearchParams {
   const p = new URLSearchParams()
   filters.districts.forEach(d => p.append('district', d))
@@ -43,11 +100,12 @@ export const api = {
   buildings: (filters: Filters) =>
     get('/api/buildings', filtersToParams(filters)),
 
-  trends: (filters: Filters, buildingId?: number, groupByDistrict?: boolean, groupByBuilding?: boolean) => {
+  trends: (filters: Filters, buildingId?: number, groupByDistrict?: boolean, groupByBuilding?: boolean, groupByBedrooms?: boolean) => {
     const p = filtersToParams(filters)
     if (buildingId != null) p.set('building_id', String(buildingId))
     if (groupByDistrict) p.set('group_by_district', 'true')
     if (groupByBuilding) p.set('group_by_building', 'true')
+    if (groupByBedrooms) p.set('group_by_bedrooms', 'true')
     return get('/api/trends', p)
   },
 

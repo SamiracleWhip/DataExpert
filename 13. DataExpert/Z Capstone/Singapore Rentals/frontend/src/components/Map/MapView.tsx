@@ -155,7 +155,7 @@ interface Props { filters: Filters }
 
 export function MapView({ filters }: Props) {
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null)
-  const [markerScale, setMarkerScale] = useState(1)
+  const [markerScale, setMarkerScale] = useState(1.7)
   const [showLines, setShowLines] = useState(true)
 
   const { data: buildings, loading, error } = useQuery<Building[]>(

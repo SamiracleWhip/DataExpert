@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Filters, Stats, TrendPoint, DistrictStat, HistogramBucket, Deal, BuildingEnrichment } from '../../types'
 import { useQuery } from '../../hooks/useQuery'
 import { api } from '../../lib/api'
@@ -24,6 +24,20 @@ interface BuildingTrendPoint {
   avg_rent: number
   avg_psm: number | null
   contracts: number
+}
+
+interface BedroomTrendPoint {
+  year: number
+  month: number
+  bedrooms: string
+  avg_rent: number
+  median_rent: number | null
+  contracts: number
+}
+
+function bedroomLabel(br: string) {
+  if (br === 'unknown') return 'Unknown'
+  return `${br} BR`
 }
 
 function fmtRent(v: number) {
@@ -56,6 +70,40 @@ const CHART_COLORS = [
 const rentFmt = (v: any) => [fmtRent(Number(v ?? 0)), 'Avg Rent'] as [string, string]
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const countFmt = (v: any) => [Number(v ?? 0).toLocaleString(), 'Contracts'] as [string, string]
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pctFmt = (v: any) => { const n = Number(v ?? 0); return [`${n >= 0 ? '+' : ''}${n.toFixed(1)}%`, 'Change'] as [string, string] }
+const pctAxis = (v: unknown) => { const n = Number(v); return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%` }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyPctChange(data: any[], mode: 'mom' | 'qoq'): any[] {
+  if (data.length === 0) return data
+  const labelToIdx = new Map<string, number>(data.map((d, i) => [d.label as string, i]))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return data.map((row, i) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = { label: row.label }
+    for (const [key, current] of Object.entries(row)) {
+      if (key === 'label') continue
+      if (typeof current !== 'number') { result[key] = null; continue }
+      let prevRow = null
+      if (mode === 'mom') {
+        prevRow = i > 0 ? data[i - 1] : null
+      } else {
+        const [yr, mo] = (row.label as string).split('-').map(Number)
+        let pm = mo - 3, py = yr
+        if (pm <= 0) { pm += 12; py -= 1 }
+        const prevLabel = `${py}-${String(pm).padStart(2, '0')}`
+        const idx = labelToIdx.get(prevLabel)
+        prevRow = idx != null ? data[idx] : null
+      }
+      const prev = prevRow?.[key]
+      result[key] = (prev == null || prev === 0)
+        ? null
+        : parseFloat(((current - prev) / Math.abs(prev) * 100).toFixed(1))
+    }
+    return result
+  })
+}
 
 // Truncate long building names for chart labels
 function shortName(name: string, max = 22) {
@@ -67,8 +115,12 @@ interface Props {
 }
 
 export function ChartsView({ filters }: Props) {
+  const [rentMetric, setRentMetric] = useState<'avg' | 'median'>('avg')
+  const [splitType, setSplitType] = useState<'buildings' | 'bedrooms'>('buildings')
+  const [viewMode, setViewMode] = useState<'price' | 'mom' | 'qoq'>('price')
   const filtersKey = JSON.stringify(filters)
   const multiBuilding = filters.selectedBuildings.length >= 2
+  const hasAnyBuilding = filters.selectedBuildings.length >= 1
   const multiDistrict = !multiBuilding && filters.districts.length > 1
 
   const { data: stats, loading: statsLoading } = useQuery<Stats>(
@@ -76,9 +128,13 @@ export function ChartsView({ filters }: Props) {
     [filtersKey],
   )
 
-  const { data: trends, loading: trendsLoading } = useQuery<TrendPoint[] | BuildingTrendPoint[]>(
-    () => api.trends(filters, undefined, multiDistrict, multiBuilding) as Promise<TrendPoint[]>,
-    [filtersKey, multiDistrict, multiBuilding],
+  const { data: trends, loading: trendsLoading } = useQuery<TrendPoint[] | BuildingTrendPoint[] | BedroomTrendPoint[]>(
+    () => api.trends(
+      filters, undefined, multiDistrict,
+      multiBuilding && splitType === 'buildings',
+      hasAnyBuilding && splitType === 'bedrooms',
+    ) as Promise<TrendPoint[]>,
+    [filtersKey, multiDistrict, multiBuilding, hasAnyBuilding, splitType],
   )
 
   const { data: districtStats } = useQuery<DistrictStat[]>(
@@ -114,6 +170,20 @@ export function ChartsView({ filters }: Props) {
   const trendChartData: any[] = (() => {
     if (!trends || trends.length === 0) return []
 
+    if (hasAnyBuilding && splitType === 'bedrooms') {
+      const byLabel: Record<string, Record<string, string | number>> = {}
+      ;(trends as BedroomTrendPoint[]).forEach(d => {
+        const label = `${d.year}-${String(d.month).padStart(2, '0')}`
+        if (!byLabel[label]) byLabel[label] = { label }
+        byLabel[label][`br_${d.bedrooms}`] = rentMetric === 'median'
+          ? (d.median_rent ?? d.avg_rent)
+          : d.avg_rent
+      })
+      return Object.values(byLabel).sort((a, b) =>
+        (a.label as string) < (b.label as string) ? -1 : 1
+      )
+    }
+
     if (multiBuilding) {
       // One column per building_id
       const byLabel: Record<string, Record<string, string | number>> = {}
@@ -142,12 +212,13 @@ export function ChartsView({ filters }: Props) {
     return (trends as TrendPoint[]).map(d => ({
       label: `${d.year}-${String(d.month).padStart(2, '0')}`,
       avg_rent: d.avg_rent,
+      median_rent: d.median_rent ?? d.avg_rent,
     }))
   })()
 
   // ── Y-axis domain for trend chart ────────────────────────────────────────
   const trendYDomain = useMemo(() => {
-    if (!trendChartData.length) return ['auto', 'auto'] as const
+    if (viewMode !== 'price' || !trendChartData.length) return ['auto', 'auto'] as const
     let min = Infinity, max = -Infinity
     trendChartData.forEach(d => {
       Object.entries(d).forEach(([k, v]) => {
@@ -163,28 +234,93 @@ export function ChartsView({ filters }: Props) {
       Math.max(0, Math.floor((min - cushion) / 500) * 500),
       Math.ceil((max + cushion) / 500) * 500,
     ] as [number, number]
-  }, [trendChartData])
+  }, [trendChartData, viewMode])
 
-  // ── PSM chart data (comparison mode only) ────────────────────────────────
+  // ── Bedroom keys (bedroom split mode) ────────────────────────────────────
+  const bedroomKeys = useMemo(() => {
+    if (!hasAnyBuilding || splitType !== 'bedrooms' || !trends || trends.length === 0) return []
+    const keys = new Set<string>()
+    ;(trends as BedroomTrendPoint[]).forEach(d => keys.add(d.bedrooms))
+    return Array.from(keys).sort((a, b) => {
+      if (a === 'unknown') return 1
+      if (b === 'unknown') return -1
+      return Number(a) - Number(b)
+    })
+  }, [trends, hasAnyBuilding, splitType])
+
+  const bedroomBarData = useMemo(() => {
+    if (!hasAnyBuilding || splitType !== 'bedrooms' || !trends || trends.length === 0) return null
+    const totals: Record<string, { sum: number; count: number }> = {}
+    ;(trends as BedroomTrendPoint[]).forEach(d => {
+      if (!totals[d.bedrooms]) totals[d.bedrooms] = { sum: 0, count: 0 }
+      totals[d.bedrooms].sum += d.avg_rent
+      totals[d.bedrooms].count += 1
+    })
+    return Object.entries(totals)
+      .map(([br, { sum, count }]) => ({ name: bedroomLabel(br), avg_rent: Math.round(sum / count), br }))
+      .sort((a, b) => {
+        if (a.br === 'unknown') return 1
+        if (b.br === 'unknown') return -1
+        return Number(a.br) - Number(b.br)
+      })
+  }, [trends, hasAnyBuilding, splitType])
+
+  // ── PSM chart data (all modes except bedroom split) ──────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const psfChartData: any[] = useMemo(() => {
-    if (!trends || trends.length === 0 || !multiBuilding) return []
-    const byLabel: Record<string, Record<string, string | number>> = {}
-    ;(trends as BuildingTrendPoint[]).forEach(d => {
-      if (d.avg_psm == null) return
-      const label = `${d.year}-${String(d.month).padStart(2, '0')}`
-      if (!byLabel[label]) byLabel[label] = { label }
-      byLabel[label][`psf_${d.building_id}`] = d.avg_psm
-    })
-    return Object.values(byLabel).sort((a, b) =>
-      (a.label as string) < (b.label as string) ? -1 : 1
-    )
-  }, [trends, multiBuilding])
+    if (!trends || trends.length === 0) return []
+    if (hasAnyBuilding && splitType === 'bedrooms') return []
+
+    if (multiBuilding && splitType === 'buildings') {
+      const byLabel: Record<string, Record<string, string | number>> = {}
+      ;(trends as BuildingTrendPoint[]).forEach(d => {
+        if (d.avg_psm == null) return
+        const label = `${d.year}-${String(d.month).padStart(2, '0')}`
+        if (!byLabel[label]) byLabel[label] = { label }
+        byLabel[label][`psf_${d.building_id}`] = d.avg_psm
+      })
+      return Object.values(byLabel).sort((a, b) =>
+        (a.label as string) < (b.label as string) ? -1 : 1
+      )
+    }
+
+    if (multiDistrict) {
+      const byLabel: Record<string, Record<string, string | number>> = {}
+      ;(trends as TrendPoint[]).forEach(d => {
+        if (d.avg_psm == null) return
+        const label = `${d.year}-${String(d.month).padStart(2, '0')}`
+        if (!byLabel[label]) byLabel[label] = { label }
+        byLabel[label][`D${d.district}`] = d.avg_psm
+      })
+      return Object.values(byLabel).sort((a, b) =>
+        (a.label as string) < (b.label as string) ? -1 : 1
+      )
+    }
+
+    // Standard / single-building
+    return (trends as TrendPoint[])
+      .filter(d => d.avg_psm != null)
+      .map(d => ({
+        label: `${d.year}-${String(d.month).padStart(2, '0')}`,
+        avg_psm: d.avg_psm,
+      }))
+  }, [trends, multiBuilding, multiDistrict, hasAnyBuilding, splitType])
 
   // ── Contract volume chart data ────────────────────────────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contractChartData: any[] = useMemo(() => {
     if (!trends || trends.length === 0) return []
+    if (hasAnyBuilding && splitType === 'bedrooms') {
+      const byLabel: Record<string, Record<string, string | number>> = {}
+      ;(trends as BedroomTrendPoint[]).forEach(d => {
+        const label = `${d.year}-${String(d.month).padStart(2, '0')}`
+        if (!byLabel[label]) byLabel[label] = { label }
+        byLabel[label][`br_${d.bedrooms}`] = d.contracts
+      })
+      return Object.values(byLabel).sort((a, b) =>
+        (a.label as string) < (b.label as string) ? -1 : 1
+      )
+    }
     if (multiBuilding) {
       const byLabel: Record<string, Record<string, string | number>> = {}
       ;(trends as BuildingTrendPoint[]).forEach(d => {
@@ -201,6 +337,20 @@ export function ChartsView({ filters }: Props) {
       contracts: d.contracts,
     }))
   }, [trends, multiBuilding])
+
+  // ── % change transformed display data (must come after all source memos) ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const displayTrendData: any[] = useMemo(() =>
+    viewMode === 'price' ? trendChartData : applyPctChange(trendChartData, viewMode),
+  [trendChartData, viewMode])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const displayContractData: any[] = useMemo(() =>
+    viewMode === 'price' ? contractChartData : applyPctChange(contractChartData, viewMode),
+  [contractChartData, viewMode])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const displayPsmData: any[] = useMemo(() =>
+    viewMode === 'price' ? psfChartData : applyPctChange(psfChartData, viewMode),
+  [psfChartData, viewMode])
 
   // ── Building comparison bar data ──────────────────────────────────────────
   // Avg rent per building (aggregate over date range)
@@ -290,29 +440,82 @@ export function ChartsView({ filters }: Props) {
 
       {/* Trend Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-        <SectionTitle>Avg Rent Over Time</SectionTitle>
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>
+            {viewMode === 'price'
+              ? `${rentMetric === 'avg' ? 'Avg' : 'Median'} Rent Over Time`
+              : `Rent ${viewMode === 'mom' ? 'MoM' : 'QoQ'} % Change`}
+          </SectionTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-400 dark:text-gray-500">Mode</span>
+              <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-0.5">
+                {(['price', 'mom', 'qoq'] as const).map(v => (
+                  <button key={v} type="button" onClick={() => setViewMode(v)}
+                    className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                      viewMode === v
+                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                    }`}>
+                    {v === 'price' ? 'Price' : v === 'mom' ? 'MoM %' : 'QoQ %'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {hasAnyBuilding && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-400 dark:text-gray-500">Split by</span>
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-0.5">
+                  {(['buildings', 'bedrooms'] as const).map(s => (
+                    <button key={s} type="button" onClick={() => setSplitType(s)}
+                      className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                        splitType === s
+                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                      }`}>
+                      {s === 'buildings' ? 'Buildings' : 'Bedrooms'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {!multiDistrict && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-400 dark:text-gray-500">View</span>
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-full p-0.5">
+                  {(['avg', 'median'] as const).map(m => (
+                    <button key={m} type="button" onClick={() => setRentMetric(m)}
+                      className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                        rentMetric === m
+                          ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                      }`}>
+                      {m === 'avg' ? 'Avg' : 'Median'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
         {trendsLoading ? (
           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">Loading…</div>
         ) : trendChartData.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400 text-sm">No data for current filters.</div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={trendChartData}>
+            <LineChart data={displayTrendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={5} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(Number(v) / 1000).toFixed(1)}k`} width={50} domain={trendYDomain} />
-              <Tooltip formatter={rentFmt} contentStyle={{ fontSize: 12 }} />
-              {multiBuilding ? (
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={viewMode === 'price' ? (v => `$${(Number(v) / 1000).toFixed(1)}k`) : pctAxis} width={55} domain={trendYDomain} />
+              <Tooltip formatter={viewMode === 'price' ? rentFmt : pctFmt} contentStyle={{ fontSize: 12 }} />
+              {hasAnyBuilding && splitType === 'bedrooms' ? (
+                bedroomKeys.map((br, i) => (
+                  <Line key={br} type="monotone" dataKey={`br_${br}`} stroke={CHART_COLORS[i % CHART_COLORS.length]} dot={false} strokeWidth={2} name={bedroomLabel(br)} />
+                ))
+              ) : multiBuilding ? (
                 filters.selectedBuildings.map((b, i) => (
-                  <Line
-                    key={b.id}
-                    type="monotone"
-                    dataKey={String(b.id)}
-                    stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                    dot={false}
-                    strokeWidth={2}
-                    name={shortName(b.name)}
-                  />
+                  <Line key={b.id} type="monotone" dataKey={String(b.id)} stroke={CHART_COLORS[i % CHART_COLORS.length]} dot={false} strokeWidth={2} name={shortName(b.name)} />
                 ))
               ) : multiDistrict ? (
                 filters.districts.map((d, i) => (
@@ -327,9 +530,16 @@ export function ChartsView({ filters }: Props) {
                   />
                 ))
               ) : (
-                <Line type="monotone" dataKey="avg_rent" stroke="#3b82f6" dot={false} strokeWidth={2} name="Avg Rent" />
+                <Line
+                  type="monotone"
+                  dataKey={rentMetric === 'avg' ? 'avg_rent' : 'median_rent'}
+                  stroke="#3b82f6"
+                  dot={false}
+                  strokeWidth={2}
+                  name={rentMetric === 'avg' ? 'Avg Rent' : 'Median Rent'}
+                />
               )}
-              {(multiBuilding || multiDistrict) && <Legend wrapperStyle={{ fontSize: 11 }} />}
+              {(multiBuilding || multiDistrict || (hasAnyBuilding && splitType === 'bedrooms')) && <Legend wrapperStyle={{ fontSize: 11 }} />}
             </LineChart>
           </ResponsiveContainer>
         )}
@@ -337,28 +547,27 @@ export function ChartsView({ filters }: Props) {
 
       {/* Contract Volume */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-        <SectionTitle>Monthly Deal Count</SectionTitle>
+        <SectionTitle>{viewMode === 'price' ? 'Monthly Deal Count' : `Deal Count ${viewMode === 'mom' ? 'MoM' : 'QoQ'} % Change`}</SectionTitle>
         {contractChartData.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-gray-400 text-sm">Loading…</div>
         ) : (
           <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={contractChartData}>
+            <LineChart data={displayContractData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={5} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => Number(v).toLocaleString()} width={45} />
-              <Tooltip formatter={countFmt} contentStyle={{ fontSize: 12 }} />
-              {multiBuilding ? (
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={viewMode === 'price' ? (v => Number(v).toLocaleString()) : pctAxis} width={50} />
+              <Tooltip formatter={viewMode === 'price' ? countFmt : pctFmt} contentStyle={{ fontSize: 12 }} />
+              {hasAnyBuilding && splitType === 'bedrooms' ? (
+                <>
+                  {bedroomKeys.map((br, i) => (
+                    <Line key={br} type="monotone" dataKey={`br_${br}`} stroke={CHART_COLORS[i % CHART_COLORS.length]} dot={false} strokeWidth={2} name={bedroomLabel(br)} />
+                  ))}
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </>
+              ) : multiBuilding ? (
                 <>
                   {filters.selectedBuildings.map((b, i) => (
-                    <Line
-                      key={b.id}
-                      type="monotone"
-                      dataKey={String(b.id)}
-                      stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                      dot={false}
-                      strokeWidth={2}
-                      name={shortName(b.name)}
-                    />
+                    <Line key={b.id} type="monotone" dataKey={String(b.id)} stroke={CHART_COLORS[i % CHART_COLORS.length]} dot={false} strokeWidth={2} name={shortName(b.name)} />
                   ))}
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                 </>
@@ -370,32 +579,38 @@ export function ChartsView({ filters }: Props) {
         )}
       </div>
 
-      {/* PSM Comparison — only in multi-building mode */}
-      {multiBuilding && psfChartData.length > 0 && (
+      {/* PSM Over Time — always shown except in bedroom split mode */}
+      {psfChartData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-          <SectionTitle>Avg PSM (Price per sqm) Over Time</SectionTitle>
+          <SectionTitle>{viewMode === 'price' ? 'Avg PSM (Price per sqm) Over Time' : `PSM ${viewMode === 'mom' ? 'MoM' : 'QoQ'} % Change`}</SectionTitle>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={psfChartData}>
+            <LineChart data={displayPsmData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} interval={5} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${Number(v).toFixed(1)}`} width={50} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={viewMode === 'price' ? (v => `$${Number(v).toFixed(1)}`) : pctAxis} width={55} />
               <Tooltip
-                formatter={(v: unknown) => [`$${Number(v).toFixed(2)}/sqm`, 'Avg PSM']}
+                formatter={viewMode === 'price'
+                  ? ((v: unknown) => [`$${Number(v).toFixed(2)}/sqm`, 'Avg PSM'])
+                  : pctFmt}
                 contentStyle={{ fontSize: 12 }}
               />
-              {filters.selectedBuildings.map((b, i) => (
-                <Line
-                  key={b.id}
-                  type="monotone"
-                  dataKey={`psf_${b.id}`}
-                  stroke={CHART_COLORS[i % CHART_COLORS.length]}
-                  dot={false}
-                  strokeWidth={2}
-                  name={shortName(b.name)}
-                  connectNulls
-                />
-              ))}
-              <Legend wrapperStyle={{ fontSize: 11 }} />
+              {multiBuilding && splitType === 'buildings' ? (
+                <>
+                  {filters.selectedBuildings.map((b, i) => (
+                    <Line key={b.id} type="monotone" dataKey={`psf_${b.id}`} stroke={CHART_COLORS[i % CHART_COLORS.length]} dot={false} strokeWidth={2} name={shortName(b.name)} connectNulls />
+                  ))}
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </>
+              ) : multiDistrict ? (
+                <>
+                  {filters.districts.map((d, i) => (
+                    <Line key={d} type="monotone" dataKey={`D${d}`} stroke={CHART_COLORS[i % CHART_COLORS.length]} dot={false} strokeWidth={2} name={`D${d}`} connectNulls />
+                  ))}
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </>
+              ) : (
+                <Line type="monotone" dataKey="avg_psm" stroke="#10b981" dot={false} strokeWidth={2} name="Avg PSM" connectNulls />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -404,9 +619,29 @@ export function ChartsView({ filters }: Props) {
       {/* District Bar OR Building Comparison Bar */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
         <SectionTitle>
-          {multiBuilding ? 'Building Comparison — Avg Rent' : 'Avg Rent by District'}
+          {hasAnyBuilding && splitType === 'bedrooms' ? 'Bedroom Comparison — Avg Rent'
+            : multiBuilding ? 'Building Comparison — Avg Rent'
+            : 'Avg Rent by District'}
         </SectionTitle>
-        {multiBuilding ? (
+        {hasAnyBuilding && splitType === 'bedrooms' ? (
+          bedroomBarData && bedroomBarData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={bedroomBarData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(Number(v) / 1000).toFixed(0)}k`} width={45} />
+                <Tooltip formatter={rentFmt} contentStyle={{ fontSize: 12 }} />
+                <Bar dataKey="avg_rent" radius={[3, 3, 0, 0]}>
+                  {bedroomBarData.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-56 flex items-center justify-center text-gray-400 text-sm">Loading…</div>
+          )
+        ) : multiBuilding ? (
           buildingBarData && buildingBarData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={buildingBarData}>
@@ -452,28 +687,6 @@ export function ChartsView({ filters }: Props) {
         )}
       </div>
 
-      {/* Rent Distribution */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-        <SectionTitle>Rent Distribution</SectionTitle>
-        {!histogram ? (
-          <div className="h-56 flex items-center justify-center text-gray-400 text-sm">Loading…</div>
-        ) : (
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={histogram}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="bucket_start" tickFormatter={v => `$${(Number(v) / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => Number(v).toLocaleString()} width={50} />
-              <Tooltip
-                formatter={countFmt}
-                labelFormatter={v => `$${Number(v).toLocaleString()} – $${(Number(v) + 499).toLocaleString()}`}
-                contentStyle={{ fontSize: 12 }}
-              />
-              <Bar dataKey="count" fill="#6366f1" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
-      </div>
-
       {/* Deal Finder */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-baseline gap-3 mb-3">
@@ -494,7 +707,9 @@ export function ChartsView({ filters }: Props) {
                   <th className="pb-2 font-medium">Building</th>
                   <th className="pb-2 font-medium">District</th>
                   <th className="pb-2 font-medium text-right">Latest Avg</th>
+                  <th className="pb-2 font-medium text-right">Latest Count</th>
                   <th className="pb-2 font-medium text-right">12-mo Avg</th>
+                  <th className="pb-2 font-medium text-right">12-mo Count</th>
                   <th className="pb-2 font-medium text-right">% Below</th>
                 </tr>
               </thead>
@@ -507,7 +722,9 @@ export function ChartsView({ filters }: Props) {
                     </td>
                     <td className="py-2 text-gray-600 dark:text-gray-300">D{d.district}</td>
                     <td className="py-2 text-right text-blue-600 dark:text-blue-400 font-medium">{fmtRent(d.recent_avg)}</td>
+                    <td className="py-2 text-right text-gray-500 dark:text-gray-400">{d.recent_count}</td>
                     <td className="py-2 text-right text-gray-500 dark:text-gray-400">{fmtRent(d.trailing_avg)}</td>
+                    <td className="py-2 text-right text-gray-500 dark:text-gray-400">{d.trailing_count}</td>
                     <td className="py-2 text-right">
                       <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
                         -{d.pct_below}%
@@ -518,6 +735,28 @@ export function ChartsView({ filters }: Props) {
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      {/* Rent Distribution */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+        <SectionTitle>Rent Distribution</SectionTitle>
+        {!histogram ? (
+          <div className="h-56 flex items-center justify-center text-gray-400 text-sm">Loading…</div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={histogram}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="bucket_start" tickFormatter={v => `$${(Number(v) / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={v => Number(v).toLocaleString()} width={50} />
+              <Tooltip
+                formatter={countFmt}
+                labelFormatter={v => `$${Number(v).toLocaleString()} – $${(Number(v) + 499).toLocaleString()}`}
+                contentStyle={{ fontSize: 12 }}
+              />
+              <Bar dataKey="count" fill="#6366f1" radius={[2, 2, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         )}
       </div>
     </div>

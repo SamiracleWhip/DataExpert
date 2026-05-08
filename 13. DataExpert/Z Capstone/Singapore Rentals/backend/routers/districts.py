@@ -59,7 +59,7 @@ def _expand_hull(hull: list[list[float]], margin: float = 0.005) -> list[list[fl
 
 # ── module-level caches ────────────────────────────────────────────────────────
 
-_boundaries_cache: dict | None = None
+_boundaries_cache: dict | None = None  # cleared on server restart
 _outline_cache: dict | None = None
 _landmass_cache: dict | None = None
 
@@ -111,7 +111,6 @@ async def district_boundaries(db: aiosqlite.Connection = Depends(get_db)):
     features = []
     for district, pts in sorted(pts_by_district.items()):
         hull = _convex_hull(pts)
-        hull = _expand_hull(hull, margin=0.008)
         features.append({
             "type": "Feature",
             "properties": {

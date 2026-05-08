@@ -32,6 +32,7 @@ export interface TrendPoint {
   year: number
   month: number
   avg_rent: number
+  median_rent: number | null
   avg_psm: number | null
   contracts: number
   district?: string
@@ -81,7 +82,9 @@ export interface Deal {
   street: string
   district: string
   recent_avg: number
+  recent_count: number
   trailing_avg: number
+  trailing_count: number
   pct_below: number
 }
 
@@ -122,6 +125,13 @@ export const MAX_BUILDINGS = 10
 export interface MrtStation {
   name: string
   building_count: number
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  toolsUsed?: string[]
+  isStreaming?: boolean
 }
 
 export interface Filters {

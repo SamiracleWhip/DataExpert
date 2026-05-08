@@ -3,6 +3,7 @@ import type { Filters, SelectedBuilding } from '../types'
 
 export const DATE_MIN = '2022-01'
 export const DATE_MAX = '2026-03'
+export const DATE_DEFAULT_FROM = '2025-06' // latest 3 quarters (9 months)
 
 const DEFAULT_FILTERS: Filters = {
   districts: [],
@@ -12,7 +13,7 @@ const DEFAULT_FILTERS: Filters = {
   areaMin: '',
   areaMax: '',
   areaUnit: 'sqm',
-  dateFrom: DATE_MIN,
+  dateFrom: DATE_DEFAULT_FROM,
   dateTo: DATE_MAX,
   selectedBuildings: [],
 }
@@ -59,7 +60,7 @@ export function useFilters() {
 
   const hasActiveFilters = Object.entries(filters).some(([k, v]) => {
     if (k === 'areaUnit') return false  // unit toggle is a mode, not a filter
-    if (k === 'dateFrom') return v !== DATE_MIN
+    if (k === 'dateFrom') return v !== DATE_DEFAULT_FROM
     if (k === 'dateTo') return v !== DATE_MAX
     if (k === 'selectedBuildings') return (v as SelectedBuilding[]).length > 0
     return Array.isArray(v) ? v.length > 0 : v !== ''

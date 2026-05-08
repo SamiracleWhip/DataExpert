@@ -4,7 +4,7 @@ import type { BuildingSuggestion, RecommendedBuilding, SelectedBuilding } from '
 import { MAX_BUILDINGS } from '../../types'
 import { api } from '../../lib/api'
 
-const HISTORY_KEY = 'shedza_search_history'
+const HISTORY_KEY = 'casota_search_history'
 const MAX_HISTORY = 20
 
 interface HistoryEntry {

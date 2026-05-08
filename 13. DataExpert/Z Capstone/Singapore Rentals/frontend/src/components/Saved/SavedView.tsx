@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Bookmark, Trash2, Train, MapPin } from 'lucide-react'
-import type { Bookmark as BookmarkType } from '../../types'
+import { Bookmark, Trash2, Train, MapPin, Download } from 'lucide-react'
+import * as XLSX from 'xlsx'
+import type { Bookmark as BookmarkType, Filters } from '../../types'
 import { getBookmarks, removeBookmark, mrtMinutes } from '../../lib/bookmarks'
 
 function fmtRent(v: number) { return `$${v.toLocaleString()}` }
@@ -14,7 +15,26 @@ function timeAgo(ts: number): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-export function SavedView() {
+function exportToExcel(bookmarks: BookmarkType[], filters: Filters) {
+  const rows = bookmarks.map(b => ({
+    'Property': b.project,
+    'Street': b.street,
+    'District': `D${b.district}`,
+    'Avg Rent (SGD)': b.avg_rent,
+    'Nearest MRT': b.nearest_mrt ?? '',
+    'MRT Walk Time': b.nearest_mrt_m != null ? mrtMinutes(b.nearest_mrt_m) : '',
+    'Date From': filters.dateFrom,
+    'Date To': filters.dateTo,
+    'Latitude': b.lat,
+    'Longitude': b.lng,
+  }))
+  const ws = XLSX.utils.json_to_sheet(rows)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Saved Properties')
+  XLSX.writeFile(wb, 'casota-saved-properties.xlsx')
+}
+
+export function SavedView({ filters }: { filters: Filters }) {
   const [bookmarks, setBookmarks] = useState<BookmarkType[]>([])
 
   useEffect(() => { setBookmarks(getBookmarks()) }, [])
@@ -42,6 +62,13 @@ export function SavedView() {
             Saved Properties
             <span className="ml-2 text-sm font-normal text-gray-400">({bookmarks.length})</span>
           </h2>
+          <button
+            onClick={() => exportToExcel(bookmarks, filters)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-800 hover:bg-green-900 text-white text-sm font-medium transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export to Excel
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

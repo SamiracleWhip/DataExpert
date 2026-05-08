@@ -214,13 +214,13 @@ async def deal_finder(
             {where}
         ),
         recent AS (
-            SELECT building_id, AVG(rent) AS recent_avg
+            SELECT building_id, AVG(rent) AS recent_avg, COUNT(*) AS recent_count
             FROM all_data
             WHERE lease_year = ? AND lease_month = ?
             GROUP BY building_id
         ),
         trailing AS (
-            SELECT building_id, AVG(rent) AS trailing_avg
+            SELECT building_id, AVG(rent) AS trailing_avg, COUNT(*) AS trailing_count
             FROM all_data
             WHERE (lease_year * 100 + lease_month) > (? * 100 + ?) - 100
             GROUP BY building_id
@@ -231,7 +231,9 @@ async def deal_finder(
             b.street,
             MAX(r.district) AS district,
             recent.recent_avg,
+            recent.recent_count,
             trailing.trailing_avg,
+            trailing.trailing_count,
             ROUND((trailing.trailing_avg - recent.recent_avg) / trailing.trailing_avg * 100, 1) AS pct_below
         FROM recent
         JOIN trailing ON trailing.building_id = recent.building_id
@@ -254,7 +256,9 @@ async def deal_finder(
             "street": r["street"],
             "district": r["district"],
             "recent_avg": round(r["recent_avg"]),
+            "recent_count": r["recent_count"],
             "trailing_avg": round(r["trailing_avg"]),
+            "trailing_count": r["trailing_count"],
             "pct_below": r["pct_below"],
         }
         for r in rows
