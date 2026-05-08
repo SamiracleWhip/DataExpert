@@ -1,5 +1,7 @@
 import type { Filters } from '../types'
 
+const BASE = import.meta.env.VITE_API_URL ?? ''
+
 export interface SseEvent {
   type: string
   text?: string
@@ -27,7 +29,7 @@ export async function* chatStream(
     f.building_id = filters.selectedBuildings.map(b => b.id)
   }
 
-  const res = await fetch('/api/chat', {
+  const res = await fetch(`${BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ message, history, filters: f }),
@@ -73,7 +75,7 @@ function filtersToParams(filters: Filters): URLSearchParams {
 }
 
 async function get<T>(path: string, params?: URLSearchParams): Promise<T> {
-  const url = params ? `${path}?${params}` : path
+  const url = params ? `${BASE}${path}?${params}` : `${BASE}${path}`
   const res = await fetch(url)
   if (!res.ok) throw new Error(`API error ${res.status}: ${url}`)
   return res.json()

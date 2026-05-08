@@ -43,7 +43,7 @@ export const ChatChart = React.memo(function ChatChart({ spec }: { spec: ChartSp
               width={44}
             />
             <Tooltip
-              formatter={(v: number) => [fmt(v), y_label ?? 'Value']}
+              formatter={(v: unknown) => [fmt(v), y_label ?? 'Value']}
               contentStyle={{ fontSize: 11, borderRadius: 6 }}
             />
             <Line
@@ -72,7 +72,7 @@ export const ChatChart = React.memo(function ChatChart({ spec }: { spec: ChartSp
               width={44}
             />
             <Tooltip
-              formatter={(v: number) => [fmt(v), y_label ?? 'Value']}
+              formatter={(v: unknown) => [fmt(v), y_label ?? 'Value']}
               contentStyle={{ fontSize: 11, borderRadius: 6 }}
             />
             <Bar dataKey="value" fill="#3b82f6" radius={[3, 3, 0, 0]} />
