@@ -90,7 +90,14 @@ def build_system_prompt(context: str, filters: dict) -> str:
         "Use the available tools to fetch live data. "
         "Always cite specific numbers. "
         "Format responses with markdown — bold key figures, use bullet points for lists. "
-        "Keep answers concise and conversational."
+        "Keep answers concise and conversational.\n\n"
+        "CHARTS: When a comparison or trend would be clearer as a visual, emit a fenced code block "
+        "tagged as `chart` containing a single JSON object:\n"
+        '  {"type": "bar"|"line", "title": "...", "data": [{"label": "...", "value": 1234}, ...], "y_label": "SGD/month"}\n'
+        "Use `bar` for comparisons (districts, buildings, bedroom types). "
+        "Use `line` for time series (rent trends over months). "
+        "Keep data to 12 points or fewer. "
+        "Only emit a chart when it genuinely adds clarity — not on every response."
     )
     return base
 

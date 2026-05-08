@@ -1,10 +1,54 @@
+import React, { useRef, useMemo } from 'react'
 import { User, Bot } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import type { ChatMessage } from '../../types'
+import { ChatChart } from './ChatChart'
+import type { ChartSpec } from './ChatChart'
 
-export function ChatBubble({ message }: { message: ChatMessage }) {
+export const ChatBubble = React.memo(function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
+  const chartSpecCache = useRef<Map<string, ChartSpec>>(new Map())
+
+  const mdComponents = useMemo(() => ({
+    p: ({ children }: { children?: React.ReactNode }) => <p className="mb-2 last:mb-0">{children}</p>,
+    strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-semibold">{children}</strong>,
+    ul: ({ children }: { children?: React.ReactNode }) => <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>,
+    ol: ({ children }: { children?: React.ReactNode }) => <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>,
+    li: ({ children }: { children?: React.ReactNode }) => <li>{children}</li>,
+    table: ({ children }: { children?: React.ReactNode }) => (
+      <div className="overflow-x-auto my-2">
+        <table className="min-w-full text-xs border-collapse">{children}</table>
+      </div>
+    ),
+    thead: ({ children }: { children?: React.ReactNode }) => <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>,
+    tbody: ({ children }: { children?: React.ReactNode }) => <tbody>{children}</tbody>,
+    tr: ({ children }: { children?: React.ReactNode }) => <tr className="border-b border-gray-200 dark:border-gray-600">{children}</tr>,
+    th: ({ children }: { children?: React.ReactNode }) => <th className="px-3 py-1.5 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">{children}</th>,
+    td: ({ children }: { children?: React.ReactNode }) => <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{children}</td>,
+    pre: ({ children }: { children?: React.ReactNode }) => {
+      const arr = React.Children.toArray(children)
+      if (arr.length === 1) {
+        const child = arr[0] as React.ReactElement<{ className?: string; children?: unknown }>
+        if (child?.props?.className === 'language-chart') {
+          try {
+            const raw = String(
+              Array.isArray(child.props.children)
+                ? child.props.children.join('')
+                : child.props.children ?? ''
+            )
+            if (!chartSpecCache.current.has(raw)) {
+              chartSpecCache.current.set(raw, JSON.parse(raw) as ChartSpec)
+            }
+            return <ChatChart spec={chartSpecCache.current.get(raw)!} />
+          } catch {}
+        }
+      }
+      return <pre className="overflow-x-auto p-3 my-2 rounded-lg bg-gray-100 dark:bg-gray-900 text-xs font-mono">{children}</pre>
+    },
+    code: ({ children }: { children?: React.ReactNode }) => <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono text-xs">{children}</code>,
+    h3: ({ children }: { children?: React.ReactNode }) => <h3 className="font-semibold text-base mb-1 mt-2">{children}</h3>,
+  }), []) // stable — chartSpecCache is a ref, never changes identity
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -28,25 +72,7 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
             <>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
-                components={{
-                  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                  strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                  ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-0.5">{children}</ul>,
-                  ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-0.5">{children}</ol>,
-                  li: ({ children }) => <li>{children}</li>,
-                  table: ({ children }) => (
-                    <div className="overflow-x-auto my-2">
-                      <table className="min-w-full text-xs border-collapse">{children}</table>
-                    </div>
-                  ),
-                  thead: ({ children }) => <thead className="bg-gray-100 dark:bg-gray-700">{children}</thead>,
-                  tbody: ({ children }) => <tbody>{children}</tbody>,
-                  tr: ({ children }) => <tr className="border-b border-gray-200 dark:border-gray-600">{children}</tr>,
-                  th: ({ children }) => <th className="px-3 py-1.5 text-left font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">{children}</th>,
-                  td: ({ children }) => <td className="px-3 py-1.5 text-gray-700 dark:text-gray-300">{children}</td>,
-                  code: ({ children }) => <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono text-xs">{children}</code>,
-                  h3: ({ children }) => <h3 className="font-semibold text-base mb-1 mt-2">{children}</h3>,
-                }}
+                components={mdComponents}
               >
                 {message.content || (message.isStreaming ? '' : '…')}
               </ReactMarkdown>
@@ -72,4 +98,4 @@ export function ChatBubble({ message }: { message: ChatMessage }) {
       </div>
     </div>
   )
-}
+})
