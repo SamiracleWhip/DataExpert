@@ -1,17 +1,15 @@
 """
 One-time script to build the ChromaDB vector store for the Shedza AI assistant.
 
-Generates ~8,900+ context documents from rentals.db:
+Generates ~4,734 context documents from rentals.db:
   - 28 district summaries
   - ~4,230 building summaries (buildings with ≥3 contracts)
   - ~476 quarterly district snapshots (28 districts × ~17 quarters)
-  - ~2,000–4,000 building enrichment docs (PropertyGuru data — requires load_pg_enrichment.py)
 
 Run from the project root:
     python scripts/build_embeddings.py
 
-Re-run after each quarterly data refresh to add new buildings and snapshots,
-or after running load_pg_enrichment.py to index new PropertyGuru data.
+Re-run after each quarterly data refresh to add new buildings and snapshots.
 Output: backend/chroma_db/  (gitignored, ~50–150MB after embedding)
 
 Uses ChromaDB's built-in ONNX embedding function (all-MiniLM-L6-v2) — no PyTorch needed.
@@ -217,88 +215,10 @@ for row in quarterly_rows:
 col_quarterly = client.get_or_create_collection("quarterly", embedding_function=ef)
 _upsert(col_quarterly, q_ids, q_docs, q_metas, "quarterly snapshot")
 
-
-# ─────────────────────────────────────────────
-# 4. BUILDING ENRICHMENT (PropertyGuru data)
-# ─────────────────────────────────────────────
-print("\n[4/4] Building enrichment summaries (PropertyGuru data)…")
-
-# Check if the enrichment tables exist
-has_enrichment = db.execute(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='building_enrichment'"
-).fetchone() is not None
-
-enrich_ids, enrich_docs, enrich_metas = [], [], []
-
-if not has_enrichment:
-    print("  ⚠ building_enrichment table not found — run load_pg_enrichment.py first.")
-    print("  Skipping enrichment collection.")
-else:
-    enrich_rows = db.execute("""
-        SELECT
-            e.building_id,
-            b.project,
-            b.street,
-            r.district,
-            d.area_name,
-            e.developer,
-            e.year_completed,
-            e.tenure,
-            e.total_units,
-            e.description
-        FROM building_enrichment e
-        JOIN buildings b ON b.id = e.building_id
-        LEFT JOIN rental_contracts r ON r.building_id = e.building_id
-        LEFT JOIN districts d ON d.district = r.district
-        GROUP BY e.building_id
-        ORDER BY e.building_id
-    """).fetchall()
-
-    # Pre-fetch facilities for all enriched buildings
-    fac_rows = db.execute(
-        "SELECT building_id, GROUP_CONCAT(facility, ', ') AS facilities FROM building_facilities GROUP BY building_id"
-    ).fetchall()
-    facilities_by_id: dict[int, str] = {r["building_id"]: r["facilities"] for r in fac_rows}
-
-    for row in enrich_rows:
-        bid = row["building_id"]
-        facilities_str = facilities_by_id.get(bid, "")
-        desc = (row["description"] or "")[:400]
-
-        parts = [f"{row['project']}, {row['street']}."]
-        if row["year_completed"]:
-            parts.append(f"Built {row['year_completed']}.")
-        if row["tenure"]:
-            parts.append(f"Tenure: {row['tenure']}.")
-        if row["developer"]:
-            parts.append(f"Developer: {row['developer']}.")
-        if row["total_units"]:
-            parts.append(f"{row['total_units']} units.")
-        if facilities_str:
-            parts.append(f"Facilities: {facilities_str}.")
-        if desc:
-            parts.append(desc)
-
-        doc = " ".join(parts)
-        enrich_ids.append(f"enrich_{bid}")
-        enrich_docs.append(doc)
-        enrich_metas.append({
-            "building_id": bid,
-            "district": row["district"] or "",
-            "type": "building_enrichment",
-        })
-
-    if enrich_docs:
-        col_enrich = client.get_or_create_collection("building_enrichment", embedding_function=ef)
-        _upsert(col_enrich, enrich_ids, enrich_docs, enrich_metas, "enrichment")
-    else:
-        print("  No enrichment rows to embed.")
-
 db.close()
 
-total = len(dist_docs) + len(bld_docs) + len(q_docs) + len(enrich_docs)
+total = len(dist_docs) + len(bld_docs) + len(q_docs)
 print(f"\n✅ Done. {total} documents embedded and stored at {CHROMA_PATH}")
-print(f"   Districts:   {len(dist_docs)}")
-print(f"   Buildings:   {len(bld_docs)}")
-print(f"   Quarterly:   {len(q_docs)}")
-print(f"   Enrichment:  {len(enrich_docs)}")
+print(f"   Districts: {len(dist_docs)}")
+print(f"   Buildings: {len(bld_docs)}")
+print(f"   Quarterly:  {len(q_docs)}")

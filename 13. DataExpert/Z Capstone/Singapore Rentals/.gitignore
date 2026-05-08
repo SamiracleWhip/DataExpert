@@ -8,7 +8,6 @@ __pycache__/
 venv/
 raw_rental_contracts_all.json
 raw_pg_enrichment.json
-backend/photo_cache/
 backend/chroma_db/
 node_modules/
 dist/

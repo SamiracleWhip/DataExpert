@@ -3,24 +3,9 @@ import type { ChatMessage, Filters } from '../types'
 import { chatStream } from '../lib/api'
 
 const STORAGE_KEY = 'casota_chat_history'
-const MAX_HISTORY = 20
-
-function saveToStorage(msgs: ChatMessage[]) {
-  try {
-    const completed = msgs.filter(m => !m.isStreaming)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(completed.slice(-MAX_HISTORY)))
-  } catch {}
-}
 
 export function useChat(filters: Filters) {
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? JSON.parse(stored) : []
-    } catch {
-      return []
-    }
-  })
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
   const clearedRef = useRef(false)
@@ -113,7 +98,6 @@ export function useChat(filters: Filters) {
           if (last?.role === 'assistant' && last.isStreaming) {
             msgs[msgs.length - 1] = { ...last, isStreaming: false }
           }
-          saveToStorage(msgs)
           return msgs
         })
       }

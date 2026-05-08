@@ -105,8 +105,6 @@ SQLite was chosen for simplicity — no server setup required, queryable with st
 
 ### 2.2 Schema
 
-**Core tables (three):**
-
 **`districts`** — static lookup table mapping district codes to area names
 ```sql
 CREATE TABLE districts (
@@ -150,37 +148,6 @@ CREATE TABLE rental_contracts (
 ```
 
 Indexes are created on `building_id`, `district`, `lease_year/month`, and `no_of_bedrooms` for query performance.
-
-**PropertyGuru enrichment tables (three — added in Step 6):**
-
-```sql
-CREATE TABLE building_enrichment (
-    building_id    INTEGER PRIMARY KEY REFERENCES buildings(id),
-    developer      TEXT,
-    year_completed INTEGER,
-    tenure         TEXT,     -- "Freehold" / "99-year leasehold" etc.
-    total_units    INTEGER,
-    description    TEXT,
-    pg_url         TEXT,
-    scraped_at     TEXT
-);
-
-CREATE TABLE building_facilities (
-    building_id  INTEGER REFERENCES buildings(id),
-    facility     TEXT NOT NULL,
-    PRIMARY KEY (building_id, facility)
-);
-
-CREATE TABLE building_photos (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    building_id  INTEGER REFERENCES buildings(id),
-    pg_url       TEXT NOT NULL,
-    local_path   TEXT,     -- relative path under backend/photo_cache/
-    chroma_id    TEXT,     -- ID in building_images ChromaDB collection
-    photo_order  INTEGER,
-    UNIQUE (building_id, photo_order)
-);
-```
 
 ### 2.3 Deduplication
 
@@ -325,7 +292,6 @@ npm run dev
 | `GET /api/buildings/search?q=` | Autocomplete building name search |
 | `GET /api/buildings/recommend` | Similar buildings by district + price range |
 | `GET /api/buildings/enrich` | MRT distance, schools within 1km, avg PSM for a building |
-| `GET /api/buildings/{id}/enrichment` | PropertyGuru data: developer, year built, tenure, total units, facilities, description |
 | `GET /api/trends` | Monthly avg rent + PSM time-series (single / by-district / by-building) |
 | `GET /api/stats` | Aggregate stats (avg, median, min, max rent) |
 | `GET /api/stats/district-breakdown` | Avg rent per district |
@@ -387,7 +353,7 @@ npm run dev
 | `migrate_area_columns.py` | Split area range strings into integer min/max columns — one-time |
 | `compute_mrt_proximity.py` | Pre-compute building↔station proximity table — one-time |
 | `refresh.py` | **Quarterly refresh** — detects missing quarters, fetches from URA, inserts into DB, geocodes new buildings, populates area columns, updates MRT proximity. Run once per quarter (`python refresh.py`) or via the `/refresh` Claude Code slash command. |
-| `scripts/build_embeddings.py` | Rebuild all ChromaDB collections (districts, buildings, quarterly, building_enrichment). Re-run after quarterly refresh or after loading new PropertyGuru data. |
+| `scripts/build_embeddings.py` | Rebuild all ChromaDB collections (districts, buildings, quarterly). Re-run after each quarterly refresh. |
 
 ---
 
@@ -395,7 +361,7 @@ npm run dev
 
 ### 5.1 Architecture
 
-Claude Sonnet 4.6 powers a streaming chat assistant in the "AI Magic" tab. The assistant has live access to the database via tool calls and optional RAG context from ChromaDB.
+Claude Sonnet 4.6 powers a streaming chat assistant in the "Casota AI" tab. The assistant has live access to the database via tool calls and optional RAG context from ChromaDB.
 
 **Flow:**
 1. User message → `POST /api/chat` (SSE)
@@ -410,7 +376,7 @@ Claude Sonnet 4.6 powers a streaming chat assistant in the "AI Magic" tab. The a
 |---|---|
 | `backend/routers/chat.py` | SSE streaming endpoint `POST /api/chat`. Manages multi-turn history (trimmed to last 20 messages) and the tool-call loop (max 4 rounds). |
 | `backend/ai/tools.py` | 8 Claude tool definitions + async executors that proxy to existing `/api/*` endpoints. |
-| `backend/ai/rag.py` | ChromaDB RAG over 5 collections (`districts`, `buildings`, `quarterly`, `building_enrichment`, `building_images`). Gracefully disabled if `chroma_db/` is absent. Also contains `build_system_prompt()` which injects RAG context + active filter state + pricing data rules. |
+| `backend/ai/rag.py` | ChromaDB RAG over 3 collections (`districts`, `buildings`, `quarterly`). Gracefully disabled if `chroma_db/` is absent. Also contains `build_system_prompt()` which injects RAG context + active filter state + pricing data rules. |
 | `backend/mcp_server.py` | MCP server exposing the same tools for use with Claude Code / other MCP clients. |
 
 ### 5.3 Tools Available to Claude
@@ -425,7 +391,6 @@ Claude Sonnet 4.6 powers a streaming chat assistant in the "AI Magic" tab. The a
 | `search_building` | Partial-match building name search |
 | `enrich_building` | Nearest MRT distance, schools within 1km, avg PSM for a building |
 | `get_contracts` | Raw individual rental contract records |
-| `get_building_enrichment` | PropertyGuru data: developer, year built, tenure, units, facilities list |
 
 All tools accept standard filter params: `district`, `bedrooms`, `property_type`, `date_from`, `date_to`, `station`.
 
@@ -436,12 +401,8 @@ All tools accept standard filter params: `district`, `bedrooms`, `property_type`
 | `districts` | 28 | District summaries with avg rent, building/contract counts, key MRT stations |
 | `buildings` | ~4,230 | Building summaries with avg rent, contract count, nearest MRT |
 | `quarterly` | ~476 | Per-district quarterly rent snapshots with QoQ change |
-| `building_enrichment` | ~2,000–4,000 | PropertyGuru text: developer, year, tenure, units, facilities, description |
-| `building_images` | varies | CLIP image embeddings for building photos (512-dim, cosine space) |
 
-The first three collections use ChromaDB's DefaultEmbeddingFunction (ONNX all-MiniLM-L6-v2).
-`building_enrichment` also uses DefaultEmbeddingFunction.
-`building_images` stores raw CLIP embeddings (no embedding function set — embeddings passed directly).
+All collections use ChromaDB's DefaultEmbeddingFunction (ONNX all-MiniLM-L6-v2) — no PyTorch required.
 
 ### 5.5 Frontend Files
 
@@ -460,7 +421,6 @@ The system prompt tells Claude it is "Casota AI" and includes:
 - District geography cheat-sheet (D01–08 CBD, D09–11 prime central, etc.)
 - RAG snippets from ChromaDB (if available)
 - User's currently active filter state (districts, bedrooms, date range, etc.)
-- Building enrichment availability notice (PropertyGuru data accessible via `get_building_enrichment`)
 
 ### 5.7 Pricing Data Rules (system-level)
 
@@ -472,61 +432,9 @@ The system prompt enforces strict rules on data source usage:
 
 ---
 
-## Step 6: PropertyGuru Enrichment
-
-### 6.1 Goal
-
-Enrich the AI with property-level data scraped from PropertyGuru: developer, year completed, tenure (freehold/leasehold), total units, facilities/amenities, descriptions, and photos. Vectorised into ChromaDB so the AI can answer questions like "which buildings in D10 have a tennis court?" and perform cross-modal image search.
-
-### 6.2 Pipeline (run in order)
-
-```bash
-# 1. Scrape PropertyGuru (hours for all 4K buildings; resumable)
-python scripts/scrape_propertyguru.py            # full run
-python scripts/scrape_propertyguru.py --limit 50 # test run
-
-# 2. Load scraped data into DB
-python scripts/load_pg_enrichment.py
-
-# 3. Download photos + generate CLIP image embeddings
-python scripts/embed_photos.py
-
-# 4. Rebuild text embeddings (adds building_enrichment collection)
-python scripts/build_embeddings.py
-```
-
-### 6.3 New DB Tables
-
-| Table | Rows (estimated) | Key Columns |
-|---|---|---|
-| `building_enrichment` | 2,000–4,000 | developer, year_completed, tenure, total_units, description, pg_url |
-| `building_facilities` | ~20,000–50,000 | building_id, facility (one row per facility) |
-| `building_photos` | ~15,000–30,000 | building_id, pg_url, local_path, chroma_id, photo_order |
-
-### 6.4 New ChromaDB Collections
-
-| Collection | Embedding Model | Purpose |
-|---|---|---|
-| `building_enrichment` | ONNX all-MiniLM-L6-v2 | Text search over developer/tenure/facilities |
-| `building_images` | CLIP clip-ViT-B-32 | Image similarity + text-to-image cross-modal search |
-
-### 6.5 New AI Tool
-
-`get_building_enrichment(building_id)` — returns developer, year_completed, tenure, total_units, facilities list, description. Powers `GET /api/buildings/{id}/enrichment`.
-
-### 6.6 Notes on Scraping
-
-- PropertyGuru ToS prohibits automated scraping; this is for personal capstone research use only.
-- First browser visit on a fresh run may show a Cloudflare challenge — the headless browser handles most cases.
-- If many buildings return `match_score=0`, try lowering `MATCH_THRESHOLD` in the script (default 75) or check for site structure changes in `_parse_project_page()`.
-- Photo download cache: `backend/photo_cache/<building_id>/<photo_order>.jpg` (git-ignored, ~1–5 GB for full dataset).
-
----
-
 ## Steps Remaining
 
 - [x] Claude-powered natural language assistant — Casota AI tab (Step 5)
 - [x] Quarterly refresh mechanism — `refresh.py`
-- [x] PropertyGuru enrichment pipeline — Step 6 (scripts ready; run scrape → load → embed → build)
-- [ ] Run full PropertyGuru scrape for all 4,157 buildings
+- [ ] Building-level enrichment data (developer, year built, tenure, facilities) — PropertyGuru blocked by Cloudflare; Claude knowledge API blocked by DataExpert proxy session requirements. Revisit with a reliable data source.
 - [ ] MRT distance display enrichment (schools data quality improvement)

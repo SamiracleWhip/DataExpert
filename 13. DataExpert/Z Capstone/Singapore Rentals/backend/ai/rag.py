@@ -34,7 +34,7 @@ def search_context(query: str, n_results: int = 8) -> str:
         return ""
 
     docs: list[str] = []
-    for collection_name in ("districts", "buildings", "quarterly", "building_enrichment"):
+    for collection_name in ("districts", "buildings", "quarterly"):
         try:
             col = _chroma_client.get_collection(collection_name, embedding_function=_ef)
             results = col.query(
@@ -49,36 +49,6 @@ def search_context(query: str, n_results: int = 8) -> str:
     if not docs:
         return ""
     return "\n\n".join(docs)
-
-
-def search_images(query: str, n_results: int = 3) -> list[dict]:
-    """
-    Find building photos semantically related to the query using CLIP embeddings.
-    Returns a list of {building_id, project, local_path, photo_order} dicts.
-    Falls back to empty list if collection is unavailable or CLIP not installed.
-    """
-    if not _init_chroma() or _chroma_client is None:
-        return []
-    try:
-        from sentence_transformers import SentenceTransformer
-
-        model = SentenceTransformer("clip-ViT-B-32")
-        query_emb = model.encode([query], convert_to_numpy=True).tolist()
-
-        col = _chroma_client.get_collection("building_images")
-        if col.count() == 0:
-            return []
-        results = col.query(
-            query_embeddings=query_emb,
-            n_results=min(n_results, col.count()),
-            include=["metadatas", "documents"],
-        )
-        items = []
-        for meta in (results.get("metadatas") or [[]])[0]:
-            items.append(meta)
-        return items
-    except Exception:
-        return []
 
 
 def build_system_prompt(context: str, filters: dict) -> str:
@@ -107,9 +77,6 @@ def build_system_prompt(context: str, filters: dict) -> str:
         base += f"The user currently has these dashboard filters active: {active}\n\n"
 
     base += (
-        "Building-level enrichment data (developer, year built, tenure, total units, "
-        "facilities) is available for many buildings via the get_building_enrichment tool. "
-        "Use it after identifying a building_id to answer questions about amenities or history.\n\n"
         "PRICING DATA RULES — follow these strictly:\n"
         "1. URA rental data is the authoritative source for all price-related answers. "
         "Always use URA prices for market analysis, comparisons, averages, trends, and recommendations.\n"

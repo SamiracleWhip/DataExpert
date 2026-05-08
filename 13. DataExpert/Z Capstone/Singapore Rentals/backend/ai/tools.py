@@ -180,26 +180,6 @@ TOOL_DEFINITIONS = [
             "required": [],
         },
     },
-    {
-        "name": "get_building_enrichment",
-        "description": (
-            "Get PropertyGuru enrichment data for a specific building: developer name, "
-            "year completed, tenure (freehold/leasehold), total units, facilities/amenities list, "
-            "and a property description. "
-            "Use after search_building or get_buildings to answer questions about what a building "
-            "offers — pool, gym, concierge, BBQ pits, tennis court, etc. — or its history."
-        ),
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "building_id": {
-                    "type": "integer",
-                    "description": "Building ID (from search_building or get_buildings results).",
-                },
-            },
-            "required": ["building_id"],
-        },
-    },
 ]
 
 
@@ -290,14 +270,6 @@ async def _get_contracts(client: httpx.AsyncClient, inp: dict) -> str:
     return r.text
 
 
-async def _get_building_enrichment(client: httpx.AsyncClient, inp: dict) -> str:
-    r = await client.get(
-        f"{FASTAPI_BASE}/api/buildings/{inp['building_id']}/enrichment",
-    )
-    r.raise_for_status()
-    return r.text
-
-
 _DISPATCH = {
     "get_stats": _get_stats,
     "get_district_breakdown": _get_district_breakdown,
@@ -307,5 +279,4 @@ _DISPATCH = {
     "search_building": _search_building,
     "enrich_building": _enrich_building,
     "get_contracts": _get_contracts,
-    "get_building_enrichment": _get_building_enrichment,
 }
