@@ -1,7 +1,9 @@
 import json
+import os
+
 import httpx
 
-FASTAPI_BASE = "http://127.0.0.1:8000"
+FASTAPI_BASE = f"http://127.0.0.1:{os.environ.get('PORT', '8000')}"
 
 # Standard filter params accepted by all tools
 _FILTER_PROPS = {
