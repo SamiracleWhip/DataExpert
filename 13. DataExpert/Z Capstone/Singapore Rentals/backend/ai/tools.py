@@ -5,6 +5,16 @@ import httpx
 
 FASTAPI_BASE = f"http://127.0.0.1:{os.environ.get('PORT', '8000')}"
 
+# Persistent client — reuses TCP connections across tool calls
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=30.0)
+    return _http_client
+
 # Standard filter params accepted by all tools
 _FILTER_PROPS = {
     "district": {
@@ -200,8 +210,7 @@ def _build_params(tool_input: dict) -> dict:
 
 async def execute_tool(tool_name: str, tool_input: dict) -> str:
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            return await _DISPATCH[tool_name](client, tool_input)
+        return await _DISPATCH[tool_name](_get_http_client(), tool_input)
     except Exception as exc:
         return json.dumps({"error": str(exc), "tool": tool_name})
 

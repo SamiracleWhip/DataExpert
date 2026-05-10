@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from typing import AsyncGenerator
@@ -40,18 +41,18 @@ async def chat(req: ChatRequest):
 
 async def _stream(req: ChatRequest) -> AsyncGenerator[dict, None]:
     try:
-        guard = await run_guard(req.message, _get_client())
+        # Run guard and RAG context fetch concurrently
+        guard, context = await asyncio.gather(
+            run_guard(req.message, _get_client()),
+            asyncio.to_thread(search_context, req.message),
+        )
         if guard.blocked:
             yield {"data": json.dumps({"type": "text", "text": guard.reply})}
             yield {"data": json.dumps({"type": "done"})}
             return
 
-        context = search_context(req.message)
         system_prompt = build_system_prompt(context, req.filters)
-
-        # Trim history to last 10 turns (20 messages) to control token usage
         messages = req.history[-20:] + [{"role": "user", "content": req.message}]
-
         client = _get_client()
 
         for _round in range(4):  # max 3 tool-call rounds + final answer
@@ -71,33 +72,26 @@ async def _stream(req: ChatRequest) -> AsyncGenerator[dict, None]:
             if final_msg.stop_reason != "tool_use":
                 break
 
-            # Execute all tool calls from this round
+            # Execute all tool calls in this round concurrently
             tool_use_blocks = [b for b in final_msg.content if b.type == "tool_use"]
-            tool_results = []
             for block in tool_use_blocks:
                 yield {"data": json.dumps({"type": "tool_start", "tool": block.name})}
-                result = await execute_tool(block.name, block.input)
-                tool_results.append(
-                    {
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result,
-                    }
-                )
 
-            # Build assistant content as plain dicts for the next API call
+            results = await asyncio.gather(
+                *[execute_tool(b.name, b.input) for b in tool_use_blocks]
+            )
+            tool_results = [
+                {"type": "tool_result", "tool_use_id": b.id, "content": r}
+                for b, r in zip(tool_use_blocks, results)
+            ]
+
             assistant_content = []
             for block in final_msg.content:
                 if block.type == "text":
                     assistant_content.append({"type": "text", "text": block.text})
                 elif block.type == "tool_use":
                     assistant_content.append(
-                        {
-                            "type": "tool_use",
-                            "id": block.id,
-                            "name": block.name,
-                            "input": block.input,
-                        }
+                        {"type": "tool_use", "id": block.id, "name": block.name, "input": block.input}
                     )
 
             messages = messages + [

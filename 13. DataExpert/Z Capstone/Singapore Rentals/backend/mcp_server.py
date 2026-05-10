@@ -31,6 +31,15 @@ import httpx
 
 FASTAPI_BASE = "http://127.0.0.1:8000"
 
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(timeout=30.0)
+    return _http_client
+
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
@@ -53,10 +62,9 @@ def _p(**kwargs) -> dict:
 
 
 async def _get(path: str, params: dict) -> str:
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        r = await client.get(f"{FASTAPI_BASE}{path}", params=params)
-        r.raise_for_status()
-        return r.text
+    r = await _get_http_client().get(f"{FASTAPI_BASE}{path}", params=params)
+    r.raise_for_status()
+    return r.text
 
 
 @mcp.tool()

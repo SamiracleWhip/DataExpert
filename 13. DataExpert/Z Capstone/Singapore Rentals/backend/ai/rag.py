@@ -30,22 +30,30 @@ def _init_chroma() -> bool:
         return False
 
 
+def _query_collection(collection_name: str, query: str, n_results: int) -> list[str]:
+    try:
+        col = _chroma_client.get_collection(collection_name, embedding_function=_ef)
+        results = col.query(
+            query_texts=[query],
+            n_results=min(n_results, col.count()),
+        )
+        return (results.get("documents") or [[]])[0]
+    except Exception:
+        return []
+
+
 def search_context(query: str, n_results: int = 8) -> str:
     if not _init_chroma() or _chroma_client is None:
         return ""
 
-    docs: list[str] = []
-    for collection_name in ("districts", "buildings", "quarterly"):
-        try:
-            col = _chroma_client.get_collection(collection_name, embedding_function=_ef)
-            results = col.query(
-                query_texts=[query],
-                n_results=min(n_results, col.count()),
-            )
-            for doc in (results.get("documents") or [[]])[0]:
-                docs.append(doc)
-        except Exception:
-            pass
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [
+            pool.submit(_query_collection, name, query, n_results)
+            for name in ("districts", "buildings", "quarterly")
+        ]
+        docs = [doc for f in futures for doc in f.result()]
 
     if not docs:
         return ""
