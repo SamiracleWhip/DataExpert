@@ -3,7 +3,7 @@ import aiosqlite
 from pathlib import Path
 from typing import AsyncGenerator
 
-DB_PATH = Path(os.environ.get("DB_PATH", str(Path(__file__).parent.parent / "rentals.db")))
+DB_PATH = Path(os.environ.get("DB_PATH", "/tmp/rentals.db"))
 
 
 async def get_db() -> AsyncGenerator[aiosqlite.Connection, None]:

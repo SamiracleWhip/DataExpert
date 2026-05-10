@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", str(Path(__file__).parent.parent / "chroma_db")))
+CHROMA_PATH = Path(os.environ.get("CHROMA_PATH", "/tmp/chroma_db"))
 
 _chroma_client = None
 _ef = None
